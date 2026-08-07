@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
         self.content_stack.addWidget(self.soil_test_page)
 
         self.crop_rec_page = CropRecPage(self)
+        self.crop_rec_page.navigate_to_page.connect(self._on_sidebar_item_selected)
         self.content_stack.addWidget(self.crop_rec_page)
 
         self.fertilizer_rec_page = FertilizerRecPage(self)

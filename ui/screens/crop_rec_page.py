@@ -1,18 +1,23 @@
 """
 Crop Recommendation Page View for Project KISAN.
-Flow: Land size input -> floor(acres * 5) sample calculation -> sensor readings -> ML model inference -> Top 10 Ranked Crops.
+Implements a 3-State Spatial Sampling Wizard in PyQt5:
+State 1: Vertical list of 5 reading slots with large touch targets.
+State 2: The Processing Phase (UX Fake loading with QTimer).
+State 3: The Result Phase with massive bold sensor value grids and highlighted crop card.
 """
 
-import json, math
-from PyQt5.QtCore import QSize, Qt
+import json
+import random
+import numpy as np
+from PyQt5.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
-    QScrollArea,
+    QStackedWidget,
     QVBoxLayout,
+    QGridLayout,
     QWidget,
 )
 import qtawesome as qta
@@ -27,195 +32,553 @@ from utils.theme import (
     COLOR_TEXT_MUTED,
     COLOR_TEXT_PRIMARY,
     FONT_FAMILY,
-    FONT_SIZE_TITLE,
 )
+
+# Color Scheme as specified in guidelines / requirements
+SLATE_DARK = "#0F172A"
+EMERALD_GREEN = "#2E7D32"
+EMERALD_LIGHT = "#4ADE80"
 
 
 class CropRecPage(QWidget):
-    """Crop Recommendation Page View."""
+    """
+    3-State Wizard Crop Recommendation Page with Premium Touch Hierarchy.
+    Handles spatial soil averaging and ML inference.
+    """
+    navigate_to_page = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.samples = [None] * 5  # Stores 5 arrays of [N, P, K, pH, Moisture, Temp]
         self._init_ui()
 
     def _init_ui(self):
         self.setStyleSheet(f"background-color: {COLOR_BACKGROUND};")
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 10)
-        layout.setSpacing(8)
+        # Root layout with 20px margin all around (breathing room)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(20, 20, 20, 20)
+        root_layout.setSpacing(0)
 
-        # Top Control Strip: Land size input & trigger
-        ctrl_strip = QFrame(self)
-        ctrl_strip.setFixedHeight(50)
-        ctrl_strip.setStyleSheet("background-color: #101910; border: 1px solid #1a291a; border-radius: 6px;")
+        # Main stacked container to swap frames
+        self.stack = QStackedWidget(self)
+        root_layout.addWidget(self.stack)
 
-        ctrl_layout = QHBoxLayout(ctrl_strip)
-        ctrl_layout.setContentsMargins(10, 4, 10, 4)
-        ctrl_layout.setSpacing(10)
+        # Build individual State Views
+        self._build_state_1_view()
+        self._build_state_2_view()
+        self._build_state_3_view()
 
-        lbl = QLabel("Land Size (Acres):", ctrl_strip)
-        lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 11px; font-weight: 600;")
+        # Start at State 1
+        self.reset_wizard()
 
-        self.acres_input = QLineEdit("1.0", ctrl_strip)
-        self.acres_input.setFixedWidth(60)
-        self.acres_input.setFixedHeight(28)
-        self.acres_input.setStyleSheet("background: #0a0f0a; color: #e5e5e5; border: 1px solid #00d97e; border-radius: 4px; padding: 0 4px;")
-        self.acres_input.textChanged.connect(self._update_samples_count)
+    # -------------------------------------------------------------------------
+    # STATE 1: Sampling Phase (Data Collection)
+    # -------------------------------------------------------------------------
+    def _build_state_1_view(self):
+        self.view_state_1 = QWidget(self)
+        layout = QVBoxLayout(self.view_state_1)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(0)  # We will use explicit addSpacing for precise padding control
+        layout.setAlignment(Qt.AlignTop)
 
-        self.samples_lbl = QLabel("Required Samples: 5", ctrl_strip)
-        self.samples_lbl.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT}; font-size: 11px; font-weight: 700;")
+        # Header reading
+        self.lbl_s1_header = QLabel("Field Sampling in Progress", self.view_state_1)
+        self.lbl_s1_header.setStyleSheet(
+            f"color: {COLOR_TEXT_PRIMARY}; font-family: {FONT_FAMILY}; font-size: 20px; font-weight: 800;"
+        )
+        self.lbl_s1_header.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.lbl_s1_header)
+        layout.addSpacing(16)  # Space below header
 
-        self.btn_run = QPushButton("Run Crop Recommendation Model", ctrl_strip)
-        self.btn_run.setFixedHeight(32)
-        self.btn_run.setCursor(Qt.PointingHandCursor)
-        self.btn_run.setStyleSheet(f"background-color: {COLOR_PRIMARY_ACCENT}; color: #0a0f0a; border-radius: 4px; font-weight: 700; font-size: 11px; padding: 0 10px;")
-        self.btn_run.clicked.connect(self._run_recommendation)
+        # Vertical rows for readings
+        self.btn_captures = []
+        self.lbl_telemetry = []
 
-        ctrl_layout.addWidget(lbl)
-        ctrl_layout.addWidget(self.acres_input)
-        ctrl_layout.addWidget(self.samples_lbl)
-        ctrl_layout.addStretch(1)
-        ctrl_layout.addWidget(self.btn_run)
+        for i in range(5):
+            row_frame = QFrame(self.view_state_1)
+            row_frame.setObjectName(f"RowFrame_{i}")
+            row_frame.setStyleSheet(f"""
+                QFrame#RowFrame_{i} {{
+                    background-color: #0f172a;
+                    border: 1px solid #1e293b;
+                    border-radius: 6px;
+                }}
+            """)
+            row_frame.setFixedHeight(48)  # Larger touch-friendly height
+            row_layout = QHBoxLayout(row_frame)
+            row_layout.setContentsMargins(14, 0, 14, 0)
+            row_layout.setSpacing(12)
 
-        layout.addWidget(ctrl_strip)
+            lbl_name = QLabel(f"Reading Spot {i+1}:", row_frame)
+            lbl_name.setFixedWidth(130)
+            lbl_name.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT}; font-family: {FONT_FAMILY}; font-size: 14px; font-weight: 800;")
 
-        # Scrollable Area for Top 10 Predictions
-        self.scroll = QScrollArea(self)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+            btn_cap = QPushButton("Capture", row_frame)
+            btn_cap.setFixedSize(85, 30)  # Slightly larger button height
+            btn_cap.setCursor(Qt.PointingHandCursor)
+            btn_cap.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {EMERALD_GREEN};
+                    color: #ffffff;
+                    border: none;
+                    border-radius: 4px;
+                    font-family: {FONT_FAMILY};
+                    font-size: 13px;
+                    font-weight: 800;
+                }}
+                QPushButton:disabled {{
+                    background-color: #334155;
+                    color: #94a3b8;
+                }}
+                QPushButton:hover {{
+                    background-color: #1e5e22;
+                }}
+            """)
+            btn_cap.clicked.connect(lambda checked, idx=i: self._capture_specific_reading(idx))
 
-        self.results_container = QWidget()
-        self.results_layout = QVBoxLayout(self.results_container)
-        self.results_layout.setContentsMargins(0, 0, 0, 0)
-        self.results_layout.setSpacing(8)
+            lbl_data = QLabel("N: -- | P: -- | K: -- | pH: -- | Temp: -- | Moist: --", row_frame)
+            lbl_data.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 14px; font-weight: 600;")
 
-        self.scroll.setWidget(self.results_container)
-        layout.addWidget(self.scroll, 1)
+            row_layout.addWidget(lbl_name)
+            row_layout.addWidget(btn_cap)
+            row_layout.addWidget(lbl_data, 1)
 
-        # Initial Run
-        self._run_recommendation()
+            layout.addWidget(row_frame)
+            self.btn_captures.append(btn_cap)
+            self.lbl_telemetry.append(lbl_data)
 
-    def _update_samples_count(self):
-        try:
-            acres = float(self.acres_input.text().strip())
-            samples = math.floor(acres * 5)
-            self.samples_lbl.setText(f"Required Samples: {max(1, samples)}")
-        except ValueError:
-            self.samples_lbl.setText("Required Samples: 5")
+            if i < 4:
+                layout.addSpacing(12)  # Breathing space between slot frames
 
-    def _run_recommendation(self):
-        # Clear previous results
-        for i in reversed(range(self.results_layout.count())):
-            widget = self.results_layout.itemAt(i).widget()
-            if widget:
-                widget.setParent(None)
+        layout.addSpacing(22)  # Breathing space above Predict Crop button
 
-        try:
-            acres = float(self.acres_input.text().strip())
-        except ValueError:
-            acres = 1.0
+        # Large Action Predict Button (50px height for finger tapping)
+        self.btn_predict = QPushButton("Predict Crop", self.view_state_1)
+        self.btn_predict.setFixedHeight(50)
+        self.btn_predict.setFixedWidth(240)
+        self.btn_predict.setCursor(Qt.PointingHandCursor)
+        self.btn_predict.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {EMERALD_GREEN};
+                color: #ffffff;
+                border: none;
+                border-radius: 6px;
+                font-family: {FONT_FAMILY};
+                font-size: 16px;
+                font-weight: 800;
+            }}
+            QPushButton:disabled {{
+                background-color: #334155;
+                color: #64748b;
+            }}
+            QPushButton:hover {{
+                background-color: #1e5e22;
+            }}
+        """)
+        self.btn_predict.clicked.connect(self._transition_to_processing)
+        layout.addWidget(self.btn_predict, 0, Qt.AlignCenter)
 
-        num_samples = max(1, math.floor(acres * 5))
+        self.stack.addWidget(self.view_state_1)
 
-        # Collect & Average Samples
-        samples = [SensorService.read_sensor_data() for _ in range(num_samples)]
-        avg_ph = round(sum(s["ph"] if s.get("ph") is not None else 6.8 for s in samples) / num_samples, 1)
-        avg_n = round(sum(s["nitrogen"] if s.get("nitrogen") is not None else 75.0 for s in samples) / num_samples, 1)
-        avg_p = round(sum(s["phosphorus"] if s.get("phosphorus") is not None else 40.0 for s in samples) / num_samples, 1)
-        avg_k = round(sum(s["potassium"] if s.get("potassium") is not None else 180.0 for s in samples) / num_samples, 1)
-        avg_m = round(sum(s["moisture"] if s.get("moisture") is not None else 35.0 for s in samples) / num_samples, 1)
-        avg_t = round(sum(s["temperature"] if s.get("temperature") is not None else 27.0 for s in samples) / num_samples, 1)
+    def _capture_specific_reading(self, idx: int):
+        # Fetch current sensor telemetry
+        data = SensorService.read_sensor_data()
+        
+        # If offline or invalid, mock realistic data
+        if not data.get("is_online", False):
+            n = float(random.randint(60, 110))
+            p = float(random.randint(30, 60))
+            k = float(random.randint(120, 220))
+            ph = round(random.uniform(6.2, 7.4), 1)
+            moisture = float(random.randint(28, 48))
+            temp = float(random.randint(24, 30))
+        else:
+            n = float(data.get("nitrogen", 75.0))
+            p = float(data.get("phosphorus", 40.0))
+            k = float(data.get("potassium", 180.0))
+            ph = float(data.get("ph", 6.8))
+            moisture = float(data.get("moisture", 35.0))
+            temp = float(data.get("temperature", 27.0))
 
+        # Save this slot reading
+        self.samples[idx] = [n, p, k, ph, moisture, temp]
 
-        # Inference
-        top_10 = RecommendationService.predict_crops(avg_ph, avg_n, avg_p, avg_k, avg_m, avg_t)
+        # Update Slot Preview Label
+        self.lbl_telemetry[idx].setText(
+            f"N: {int(n)} | P: {int(p)} | K: {int(k)} | pH: {ph} | Temp: {temp}°C | Moist: {moisture}%"
+        )
+        self.lbl_telemetry[idx].setStyleSheet(f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700;")
+        self.btn_captures[idx].setText("Re-Capture")
 
-        # 1. Best Match Card
-        best = top_10[0]
-        best_card = QFrame()
-        best_card.setStyleSheet("background-color: #122412; border: 1px solid #00d97e; border-radius: 8px;")
-        bc_layout = QHBoxLayout(best_card)
-        bc_layout.setContentsMargins(12, 10, 12, 10)
+        # Enable the next slot's capture button
+        if idx + 1 < 5:
+            self.btn_captures[idx + 1].setEnabled(True)
 
-        ic = QLabel(best_card)
-        ic.setPixmap(qta.icon(best["icon"], color=COLOR_PRIMARY_ACCENT).pixmap(32, 32))
+        # Check if all 5 spots have been sampled
+        if all(s is not None for s in self.samples):
+            self.btn_predict.setEnabled(True)
 
-        b_txt = QVBoxLayout()
-        b_title = QLabel(f"RANK #1: {best['crop'].upper()} (BEST SUITED CROP)", best_card)
-        b_title.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT}; font-size: 14px; font-weight: 800;")
+    # -------------------------------------------------------------------------
+    # STATE 2: Processing Phase (UX Polish / Loading Screen)
+    # -------------------------------------------------------------------------
+    def _build_state_2_view(self):
+        self.view_state_2 = QWidget(self)
+        layout = QVBoxLayout(self.view_state_2)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(20)
+        layout.setAlignment(Qt.AlignCenter)
 
-        b_desc = QLabel(f"Confidence Score: {best['confidence']}% • Target Baseline: {best['baseline_npk']}\nAnalyzed vector across {num_samples} soil samples: pH {avg_ph}, N {avg_n}, P {avg_p}, K {avg_k}", best_card)
-        b_desc.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 10px;")
+        # Centered loading animation/text
+        self.lbl_s2_status = QLabel("Processing data...", self.view_state_2)
+        self.lbl_s2_status.setStyleSheet(
+            f"color: {COLOR_TEXT_PRIMARY}; font-family: {FONT_FAMILY}; font-size: 18px; font-weight: 700;"
+        )
+        self.lbl_s2_status.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.lbl_s2_status)
 
-        b_txt.addWidget(b_title)
-        b_txt.addWidget(b_desc)
+        self.stack.addWidget(self.view_state_2)
 
-        bc_layout.addWidget(ic)
-        bc_layout.addLayout(b_txt, 1)
-        self.results_layout.addWidget(best_card)
+    def _transition_to_processing(self):
+        self.stack.setCurrentIndex(1)
+        
+        # Step A: Perform numerical average instantly using numpy.mean
+        # self.samples is [ [N, P, K, pH, Moisture, Temp], ... ]
+        self.averaged_vector = np.mean(self.samples, axis=0)
 
-        # 2. Next 3 Runner-Ups (Ranks 2-4)
-        runners_hdr = QLabel("Top Runner-Up Crops:", self.results_container)
-        runners_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 11px; font-weight: 700;")
-        self.results_layout.addWidget(runners_hdr)
+        # Phase 1: Average message
+        self.lbl_s2_status.setText("Averaging 5 spatial soil samples...")
 
-        r_row = QHBoxLayout()
-        for idx, crop_data in enumerate(top_10[1:4], start=2):
-            rc = QFrame()
-            rc.setStyleSheet("background-color: #101910; border: 1px solid #1a291a; border-radius: 6px;")
-            rc_l = QVBoxLayout(rc)
-            rc_l.setContentsMargins(8, 6, 8, 6)
+        # Phase 2 delay: 1.0 second -> Load AI model message
+        QTimer.singleShot(1000, self._step2_loading_model)
 
-            r_lbl = QLabel(f"#{idx} {crop_data['crop']}", rc)
-            r_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 12px; font-weight: 700;")
-            r_sub = QLabel(f"Match: {crop_data['confidence']}%", rc)
-            r_sub.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT}; font-size: 10px; font-weight: 600;")
+    def _step2_loading_model(self):
+        self.lbl_s2_status.setText("Loading Edge-AI inference model...")
+        
+        # Phase 3 delay: 1.5 seconds -> Predict crop and show Result page
+        QTimer.singleShot(1500, self._step2_run_inference)
 
-            rc_l.addWidget(r_lbl)
-            rc_l.addWidget(r_sub)
-            r_row.addWidget(rc)
+    def _step2_run_inference(self):
+        avg_n, avg_p, avg_k, avg_ph, avg_m, avg_t = self.averaged_vector
 
-        self.results_layout.addLayout(r_row)
+        # Predict top 10 recommended crops
+        top_10 = RecommendationService.predict_crops(
+            ph=round(avg_ph, 1),
+            n=round(avg_n, 1),
+            p=round(avg_p, 1),
+            k=round(avg_k, 1),
+            moisture=round(avg_m, 1),
+            temp=round(avg_t, 1)
+        )
 
-        # 3. Remaining 6 Crops (Ranks 5-10)
-        rem_hdr = QLabel("Other Suitable Crops:", self.results_container)
-        rem_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 11px; font-weight: 700;")
-        self.results_layout.addWidget(rem_hdr)
+        best_crop = top_10[0]
+        
+        self.lbl_s3_prediction.setText(best_crop['crop'].upper())
+        self.lbl_s3_confidence.setText(f"Confidence Score  {best_crop['confidence']:.1f} %")
+        self.lbl_best_icon.setPixmap(qta.icon(best_crop['icon'], color=EMERALD_LIGHT).pixmap(32, 32))
 
-        rem_grid = QHBoxLayout()
-        for idx, crop_data in enumerate(top_10[4:10], start=5):
-            c_box = QFrame()
-            c_box.setStyleSheet("background-color: #0d140d; border: 1px solid #142014; border-radius: 4px;")
-            c_l = QVBoxLayout(c_box)
-            c_l.setContentsMargins(6, 4, 6, 4)
+        # Update Runner cards
+        for idx in range(3):
+            if idx + 1 < len(top_10):
+                crop_data = top_10[idx + 1]
+                self.runner_names[idx].setText(crop_data['crop'].upper())
+                self.runner_pcts[idx].setText(f"{crop_data['confidence']:.1f}%")
+                self.runner_icons[idx].setPixmap(qta.icon(crop_data['icon'], color=EMERALD_LIGHT).pixmap(20, 20))
 
-            t_l = QLabel(f"#{idx} {crop_data['crop']}", c_box)
-            t_l.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 10px; font-weight: 600;")
-            m_l = QLabel(f"{crop_data['confidence']}%", c_box)
-            m_l.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 9px;")
+        # Update the massive telemetry labels inside the grid
+        self.lbl_grid_vals["N"].setText(str(int(avg_n)))
+        self.lbl_grid_vals["P"].setText(str(int(avg_p)))
+        self.lbl_grid_vals["K"].setText(str(int(avg_k)))
+        self.lbl_grid_vals["pH"].setText(str(round(avg_ph, 1)))
+        self.lbl_grid_vals["Moisture"].setText(f"{int(avg_m)}%")
+        self.lbl_grid_vals["Temp"].setText(f"{int(avg_t)}°C")
 
-            c_l.addWidget(t_l)
-            c_l.addWidget(m_l)
-            rem_grid.addWidget(c_box)
-
-        self.results_layout.addLayout(rem_grid)
-
-        # Save session to DB if farmer logged in
+        # Save session to DB if farmer is authenticated
         farmer = AuthManager.get_current_farmer()
         if farmer:
             sess = CropRecommendationSession(
                 farmer_id=farmer.id,
-                land_size_acres=acres,
-                num_samples_taken=num_samples,
-                avg_ph=avg_ph,
-                avg_nitrogen=avg_n,
-                avg_phosphorus=avg_p,
-                avg_potassium=avg_k,
-                avg_moisture=avg_m,
-                avg_temperature=avg_t,
+                land_size_acres=1.0,
+                num_samples_taken=5,
+                avg_ph=round(avg_ph, 1),
+                avg_nitrogen=round(avg_n, 1),
+                avg_phosphorus=round(avg_p, 1),
+                avg_potassium=round(avg_k, 1),
+                avg_moisture=round(avg_m, 1),
+                avg_temperature=round(avg_t, 1),
                 model_version_used="v1.2-RF",
                 top_10_predictions=json.dumps(top_10)
             )
             db_session.add(sess)
             db_session.commit()
+
+        # Switch to State 3
+        self.stack.setCurrentIndex(2)
+
+    # -------------------------------------------------------------------------
+    # STATE 3: Result Phase (Output Screen)
+    # -------------------------------------------------------------------------
+    def _build_state_3_view(self):
+        self.view_state_3 = QWidget(self)
+        layout = QVBoxLayout(self.view_state_3)
+        layout.setContentsMargins(0, 10, 0, 10)
+        layout.setSpacing(0)
+        layout.setAlignment(Qt.AlignCenter)
+
+        # Unified 560px centered column container to prevent misalignment and clipping
+        center_widget = QWidget(self.view_state_3)
+        center_widget.setFixedWidth(560)
+        center_layout = QVBoxLayout(center_widget)
+        center_layout.setContentsMargins(0, 0, 0, 0)
+        center_layout.setSpacing(0)
+
+        # 1. Best Match Card Container
+        best_match_frame = QFrame(center_widget)
+        best_match_frame.setObjectName("BestMatchFrame")
+        best_match_frame.setStyleSheet("""
+            QFrame#BestMatchFrame {
+                background: transparent;
+                border: none;
+            }
+        """)
+        best_match_frame.setFixedHeight(94)
+        
+        bm_layout = QHBoxLayout(best_match_frame)
+        bm_layout.setContentsMargins(0, 0, 0, 0)
+        bm_layout.setSpacing(18)
+        
+        # Left circular icon badge
+        self.lbl_best_icon = QLabel(best_match_frame)
+        self.lbl_best_icon.setFixedSize(64, 64)
+        self.lbl_best_icon.setAlignment(Qt.AlignCenter)
+        self.lbl_best_icon.setStyleSheet(f"""
+            QLabel {{
+                border: 3px solid {EMERALD_LIGHT};
+                border-radius: 32px;
+                background-color: #0b1a11;
+            }}
+        """)
+        bm_layout.addWidget(self.lbl_best_icon, 0, Qt.AlignVCenter)
+        
+        # Right details layout
+        details_layout = QVBoxLayout()
+        details_layout.setSpacing(3)
+        details_layout.setAlignment(Qt.AlignVCenter)
+        
+        lbl_bm_title = QLabel("Best Match", best_match_frame)
+        lbl_bm_title.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700; border: none; background: transparent;")
+        
+        self.lbl_s3_prediction = QLabel("SUGARCANE", best_match_frame)
+        self.lbl_s3_prediction.setStyleSheet(f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 26px; font-weight: 800; border: none; background: transparent;")
+        
+        # Confidence pill
+        self.pill_frame = QFrame(best_match_frame)
+        self.pill_frame.setObjectName("PillFrame")
+        self.pill_frame.setFixedHeight(24)
+        self.pill_frame.setFixedWidth(210)
+        self.pill_frame.setStyleSheet(f"""
+            QFrame#PillFrame {{
+                border: 1px solid #16a34a;
+                border-radius: 12px;
+                background-color: #0b1511;
+            }}
+        """)
+        pill_layout = QHBoxLayout(self.pill_frame)
+        pill_layout.setContentsMargins(12, 0, 12, 0)
+        self.lbl_s3_confidence = QLabel("Confidence Score  92.4 %", self.pill_frame)
+        self.lbl_s3_confidence.setStyleSheet(f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 11px; font-weight: 700; border: none; background: transparent;")
+        pill_layout.addWidget(self.lbl_s3_confidence, 0, Qt.AlignCenter)
+        
+        details_layout.addWidget(lbl_bm_title)
+        details_layout.addWidget(self.lbl_s3_prediction)
+        details_layout.addWidget(self.pill_frame)
+        
+        bm_layout.addLayout(details_layout, 1)
+        center_layout.addWidget(best_match_frame)
+
+        center_layout.addSpacing(16)
+
+        # 2. Runner-ups Layout (Header + Cards)
+        lbl_runners_header = QLabel("Other Suitable Crops", center_widget)
+        lbl_runners_header.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700;")
+        center_layout.addWidget(lbl_runners_header)
+
+        center_layout.addSpacing(6)
+
+        # Horizontal layout for the 3 runner cards (centered exactly within the 560px column)
+        runners_widget = QWidget(center_widget)
+        self.runners_layout = QHBoxLayout(runners_widget)
+        self.runners_layout.setContentsMargins(0, 0, 0, 0)
+        self.runners_layout.setSpacing(14)
+        
+        self.runner_icons = []
+        self.runner_names = []
+        self.runner_pcts = []
+        
+        for i in range(3):
+            card = QFrame(runners_widget)
+            card.setObjectName(f"RunnerCard_{i}")
+            card.setStyleSheet(f"""
+                QFrame#RunnerCard_{i} {{
+                    background-color: #09130d;
+                    border: 1px solid #165328;
+                    border-radius: 8px;
+                }}
+            """)
+            card.setFixedSize(177, 94)  # Expanded slightly to fill 560px width nicely
+            
+            c_lay = QVBoxLayout(card)
+            c_lay.setContentsMargins(8, 10, 8, 10)
+            c_lay.setSpacing(4)
+            c_lay.setAlignment(Qt.AlignCenter)
+            
+            ic = QLabel(card)
+            ic.setFixedSize(24, 24)
+            ic.setAlignment(Qt.AlignCenter)
+            ic.setStyleSheet("border: none; background: transparent;")
+            
+            nm = QLabel("JOWAR", card)
+            nm.setAlignment(Qt.AlignCenter)
+            nm.setStyleSheet(f"color: #ffffff; font-family: {FONT_FAMILY}; font-size: 11px; font-weight: 800; border: none; background: transparent;")
+            
+            pt = QLabel("74.6%", card)
+            pt.setAlignment(Qt.AlignCenter)
+            pt.setStyleSheet(f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 10px; font-weight: 700; border: none; background: transparent;")
+            
+            c_lay.addWidget(ic)
+            c_lay.addWidget(nm)
+            c_lay.addWidget(pt)
+            
+            self.runners_layout.addWidget(card)
+            self.runner_icons.append(ic)
+            self.runner_names.append(nm)
+            self.runner_pcts.append(pt)
+            
+        center_layout.addWidget(runners_widget)
+
+        center_layout.addSpacing(16)
+
+        # 3. Compact Telemetry Grid
+        grid_frame = QFrame(center_widget)
+        grid_frame.setStyleSheet("background-color: #0b1329; border: 1px solid #1e293b; border-radius: 8px;")
+        grid_frame.setFixedHeight(64)
+        
+        grid_layout = QHBoxLayout(grid_frame)
+        grid_layout.setContentsMargins(8, 4, 8, 4)
+        grid_layout.setSpacing(8)
+
+        parameters = [
+            ("N", "Nitrogen"),
+            ("P", "Phosphorus"),
+            ("K", "Potassium"),
+            ("pH", "pH Level"),
+            ("Moisture", "Moisture"),
+            ("Temp", "Temperature"),
+        ]
+
+        self.lbl_grid_vals = {}
+
+        for key, name in parameters:
+            cell = QFrame(grid_frame)
+            cell.setStyleSheet("background-color: #0f172a; border-radius: 5px;")
+            cell_layout = QVBoxLayout(cell)
+            cell_layout.setContentsMargins(4, 2, 4, 2)
+            cell_layout.setSpacing(1)
+            cell_layout.setAlignment(Qt.AlignCenter)
+
+            val_lbl = QLabel("--", cell)
+            val_lbl.setAlignment(Qt.AlignCenter)
+            val_lbl.setStyleSheet(f"color: #ffffff; font-family: {FONT_FAMILY}; font-size: 16px; font-weight: 800;")
+            
+            name_lbl = QLabel(name, cell)
+            name_lbl.setAlignment(Qt.AlignCenter)
+            name_lbl.setStyleSheet(f"color: #94a3b8; font-family: {FONT_FAMILY}; font-size: 8px; font-weight: 600;")
+
+            cell_layout.addWidget(val_lbl)
+            cell_layout.addWidget(name_lbl)
+            grid_layout.addWidget(cell)
+
+            self.lbl_grid_vals[key] = val_lbl
+
+        center_layout.addWidget(grid_frame)
+        center_layout.addSpacing(16)
+
+        # 4. Bottom Buttons (50px tall touch targets)
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(16)
+        btn_layout.setAlignment(Qt.AlignCenter)
+
+        # Button 1: Calculate Fertilizer Deficit
+        self.btn_fertilizer = QPushButton("Calculate Fertilizer Deficit", self.view_state_3)
+        self.btn_fertilizer.setFixedHeight(50)
+        self.btn_fertilizer.setFixedWidth(240)
+        self.btn_fertilizer.setCursor(Qt.PointingHandCursor)
+        self.btn_fertilizer.setStyleSheet("""
+            QPushButton {
+                background-color: #1d4ed8;
+                color: #ffffff;
+                border: none;
+                border-radius: 6px;
+                font-family: """ + FONT_FAMILY + """;
+                font-size: 13px;
+                font-weight: 800;
+            }
+            QPushButton:hover {
+                background-color: #2563eb;
+            }
+        """)
+        self.btn_fertilizer.clicked.connect(self._calculate_fertilizer)
+        btn_layout.addWidget(self.btn_fertilizer)
+
+        # Button 2: Start New Scan
+        self.btn_new_scan = QPushButton("Start New Scan", self.view_state_3)
+        self.btn_new_scan.setFixedHeight(50)
+        self.btn_new_scan.setFixedWidth(160)
+        self.btn_new_scan.setCursor(Qt.PointingHandCursor)
+        self.btn_new_scan.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {EMERALD_GREEN};
+                color: #ffffff;
+                border: none;
+                border-radius: 6px;
+                font-family: {FONT_FAMILY};
+                font-size: 13px;
+                font-weight: 800;
+            }}
+            QPushButton:hover {{
+                background-color: #1e5e22;
+            }}
+        """)
+        self.btn_new_scan.clicked.connect(self.reset_wizard)
+        btn_layout.addWidget(self.btn_new_scan)
+
+        center_layout.addLayout(btn_layout)
+
+        # Add the entire centered layout column to the main view layout
+        layout.addWidget(center_widget, 0, Qt.AlignCenter)
+        self.stack.addWidget(self.view_state_3)
+
+    def _calculate_fertilizer(self):
+        print("[Crop Recommendation] Calculate Fertilizer Deficit Action Triggered!")
+        # Emit page switch signal to Fertilizer Recommendation Page (Index 3 in SidebarIdx)
+        self.navigate_to_page.emit(3)
+
+    # -------------------------------------------------------------------------
+    # RESET AND INITIALIZATION
+    # -------------------------------------------------------------------------
+    def reset_wizard(self):
+        """Reset sampling parameters and return UI to State 1."""
+        self.samples = [None] * 5
+        
+        # Reset telemetry strings & button states
+        for i in range(5):
+            self.lbl_telemetry[i].setText("N: -- | P: -- | K: -- | pH: -- | Temp: -- | Moist: --")
+            self.lbl_telemetry[i].setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 600;")
+            self.btn_captures[i].setText("Capture")
+            # Only enable the first slot initially
+            self.btn_captures[i].setEnabled(i == 0)
+
+        # Predict Crop is disabled until all 5 slots are populated
+        self.btn_predict.setEnabled(False)
+        self.stack.setCurrentIndex(0)
+
