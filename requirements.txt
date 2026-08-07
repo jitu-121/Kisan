@@ -1,2 +1,10 @@
-PyQt5>=5.15.0
-qtawesome>=1.2.0
+PyQt5>=5.15.11
+qtawesome>=1.4.2
+bcrypt>=5.0.0
+numpy>=2.1.1
+joblib>=1.4.2
+requests>=2.32.3
+SQLAlchemy>=2.0.51
+reportlab>=5.0.0
+scikit-learn>=1.5.2
+pyserial>=3.5
