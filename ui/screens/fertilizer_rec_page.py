@@ -273,21 +273,24 @@ class FertilizerRecPage(QWidget):
         cols_box.addLayout(col_left, 1)
         cols_box.addLayout(col_right, 1)
 
-        v_inp_layout.addLayout(cols_box, 1)
+        v_inp_layout.addLayout(cols_box)
 
-        # Action Button at Bottom
+        # Action Button (placed in the middle/under inputs and centered)
+        calc_btn_layout = QHBoxLayout()
         btn_calc = QPushButton("💊 Calculate Fertilizer Guidance ➔", self.view_input)
-        btn_calc.setFixedHeight(38)
+        btn_calc.setFixedHeight(54)
+        btn_calc.setMinimumWidth(320)
         btn_calc.setCursor(Qt.PointingHandCursor)
         btn_calc.setStyleSheet(f"""
             QPushButton {{
                 background-color: #14532d;
                 color: #ffffff;
-                border: 1px solid {COLOR_PRIMARY_ACCENT};
-                border-radius: 6px;
+                border: 2px solid {COLOR_PRIMARY_ACCENT};
+                border-radius: 8px;
                 font-family: {FONT_FAMILY};
-                font-size: 12px;
+                font-size: 15px;
                 font-weight: 800;
+                padding: 0 24px;
             }}
             QPushButton:hover {{
                 background-color: #166534;
@@ -295,7 +298,14 @@ class FertilizerRecPage(QWidget):
         """)
         btn_calc.clicked.connect(self._run_calculation_and_show_results)
 
-        v_inp_layout.addWidget(btn_calc)
+        calc_btn_layout.addStretch(1)
+        calc_btn_layout.addWidget(btn_calc)
+        calc_btn_layout.addStretch(1)
+
+        v_inp_layout.addLayout(calc_btn_layout)
+
+        # Add vertical stretch at the bottom to group inputs and action button compactly in the middle/upper view
+        v_inp_layout.addStretch(1)
 
         self.stack.addWidget(self.view_input)
 

@@ -6,7 +6,7 @@ View 1: In-Page Full-Screen Field Sampling Wizard View with '⬅ Back to Soil Te
 """
 
 import math
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QFrame,
@@ -50,6 +50,11 @@ class SoilTestPage(QWidget):
         self.req_tests = 5
         self.acres = 1.0
         self._init_ui()
+
+        # Telemetry timer for real-time sensor updates (checks every 2 seconds)
+        self.telemetry_timer = QTimer(self)
+        self.telemetry_timer.timeout.connect(self._run_realtime_scan)
+        self.telemetry_timer.start(2000)
 
     def _init_ui(self):
         self.setStyleSheet(f"background-color: {COLOR_BACKGROUND};")
@@ -304,29 +309,29 @@ class SoilTestPage(QWidget):
         w_hdr = QFrame(self.wizard_view)
         w_hdr.setStyleSheet("background-color: #0d1424; border: 1px solid #1e293b; border-radius: 8px;")
         wh_l = QHBoxLayout(w_hdr)
-        wh_l.setContentsMargins(10, 6, 10, 6)
+        wh_l.setContentsMargins(12, 8, 12, 8)
 
         btn_back = QPushButton("⬅ Back to Soil Laboratory", w_hdr)
-        btn_back.setFixedHeight(30)
+        btn_back.setFixedHeight(42)
         btn_back.setCursor(Qt.PointingHandCursor)
         btn_back.setStyleSheet("""
             QPushButton {
                 background-color: #1e293b;
                 color: #ffffff;
                 border: 1px solid #334155;
-                border-radius: 5px;
-                font-size: 10px;
+                border-radius: 6px;
+                font-size: 13px;
                 font-weight: 700;
-                padding: 0 12px;
+                padding: 0 16px;
             }
             QPushButton:hover {
                 background-color: #334155;
             }
         """)
-        btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        btn_back.clicked.connect(self._go_back_to_dashboard)
 
         self.w_title_lbl = QLabel("🌾 Field Sampling Wizard", w_hdr)
-        self.w_title_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 13px; font-weight: 800;")
+        self.w_title_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 16px; font-weight: 800;")
 
         wh_l.addWidget(btn_back)
         wh_l.addWidget(self.w_title_lbl)
@@ -336,20 +341,20 @@ class SoilTestPage(QWidget):
 
         # Progress Bar
         self.wiz_prog_bar = QProgressBar(self.wizard_view)
-        self.wiz_prog_bar.setFixedHeight(18)
+        self.wiz_prog_bar.setFixedHeight(28)
         self.wiz_prog_bar.setStyleSheet(f"""
             QProgressBar {{
                 background-color: #0d1424;
                 border: 1px solid #1e293b;
-                border-radius: 9px;
+                border-radius: 12px;
                 text-align: center;
                 color: #ffffff;
-                font-size: 10px;
+                font-size: 13px;
                 font-weight: 700;
             }}
             QProgressBar::chunk {{
                 background-color: {COLOR_PRIMARY_ACCENT};
-                border-radius: 8px;
+                border-radius: 11px;
             }}
         """)
         wiz_layout.addWidget(self.wiz_prog_bar)
@@ -358,13 +363,13 @@ class SoilTestPage(QWidget):
         self.wiz_spot_card = QFrame(self.wizard_view)
         self.wiz_spot_card.setStyleSheet("background-color: #0d1424; border: 1px solid #1e293b; border-radius: 8px;")
         sc_l = QHBoxLayout(self.wiz_spot_card)
-        sc_l.setContentsMargins(12, 6, 12, 6)
+        sc_l.setContentsMargins(16, 10, 16, 10)
 
         self.wiz_spot_lbl = QLabel("📍 Current Spot: Sample #1 of 5", self.wiz_spot_card)
-        self.wiz_spot_lbl.setStyleSheet("color: #ffffff; font-size: 11px; font-weight: 700;")
+        self.wiz_spot_lbl.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: 700;")
 
         self.wiz_btn_capture = QPushButton("📍 Capture Spot #1 Reading", self.wiz_spot_card)
-        self.wiz_btn_capture.setFixedHeight(30)
+        self.wiz_btn_capture.setFixedHeight(45)
         self.wiz_btn_capture.setCursor(Qt.PointingHandCursor)
         self.wiz_btn_capture.setIcon(qta.icon("fa5s.vial", color="#ffffff"))
         self.wiz_btn_capture.setStyleSheet(f"""
@@ -372,10 +377,10 @@ class SoilTestPage(QWidget):
                 background-color: #14532d;
                 color: #ffffff;
                 border: 1px solid {COLOR_PRIMARY_ACCENT};
-                border-radius: 5px;
-                font-size: 10px;
+                border-radius: 6px;
+                font-size: 13px;
                 font-weight: 700;
-                padding: 0 12px;
+                padding: 0 18px;
             }}
             QPushButton:hover {{
                 background-color: #166534;
@@ -393,6 +398,8 @@ class SoilTestPage(QWidget):
         self.wiz_table = QTableWidget(0, 7, self.wizard_view)
         self.wiz_table.setHorizontalHeaderLabels(["Spot #", "pH", "Nitrogen", "Phosphorus", "Potassium", "Moisture", "Temp"])
         self.wiz_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.wiz_table.horizontalHeader().setMinimumHeight(40)
+        self.wiz_table.verticalHeader().setDefaultSectionSize(40) # Larger row height for touch selection
         self.wiz_table.setStyleSheet("""
             QTableWidget {
                 background-color: #0b101d;
@@ -400,22 +407,24 @@ class SoilTestPage(QWidget):
                 border: 1px solid #141c2e;
                 border-radius: 6px;
                 gridline-color: #1e293b;
-                font-size: 10px;
+                font-size: 13px;
             }
             QHeaderView::section {
                 background-color: #111a2e;
                 color: #22c55e;
                 font-weight: 700;
                 border: 1px solid #1e293b;
-                padding: 4px;
+                padding: 8px;
+                font-size: 13px;
             }
         """)
-        wiz_layout.addWidget(self.wiz_table, 1)
+        self.wiz_table.setFixedHeight(260) # Increased height to easily fit all rows with larger heights
+        wiz_layout.addWidget(self.wiz_table)
 
-        # Bottom Finish Action Button
+        # Finish Action Button (placed just below the table)
         wiz_bot = QHBoxLayout()
         self.wiz_btn_finish = QPushButton("  Complete Field Sampling & Calculate Averages", self.wizard_view)
-        self.wiz_btn_finish.setFixedHeight(34)
+        self.wiz_btn_finish.setFixedHeight(50)
         self.wiz_btn_finish.setEnabled(False)
         self.wiz_btn_finish.setCursor(Qt.PointingHandCursor)
         self.wiz_btn_finish.setStyleSheet("""
@@ -423,10 +432,10 @@ class SoilTestPage(QWidget):
                 background-color: #166534;
                 color: #ffffff;
                 border: 1px solid #22c55e;
-                border-radius: 6px;
-                font-size: 11px;
+                border-radius: 8px;
+                font-size: 14px;
                 font-weight: 800;
-                padding: 0 14px;
+                padding: 0 20px;
             }
             QPushButton:disabled {
                 background-color: #1b263b;
@@ -438,8 +447,11 @@ class SoilTestPage(QWidget):
 
         wiz_bot.addStretch(1)
         wiz_bot.addWidget(self.wiz_btn_finish)
-
+        wiz_bot.addStretch(1)
         wiz_layout.addLayout(wiz_bot)
+
+        # Add a stretch to push everything compactly to the top
+        wiz_layout.addStretch(1)
 
         # Assemble Stacked Widget Views
         self.stack.addWidget(self.dashboard_view)  # Index 0
@@ -562,7 +574,17 @@ class SoilTestPage(QWidget):
                 unit_lbl.setText("")
                 sub_lbl.setText("")
 
+    def _run_realtime_scan(self):
+        if not self.isVisible() or self.stack.currentIndex() != 0:
+            return
+        self._run_single_test()
+
+    def _go_back_to_dashboard(self):
+        self.stack.setCurrentIndex(0)
+        self.telemetry_timer.start(2000)
+
     def _open_in_page_wizard(self):
+        self.telemetry_timer.stop() # Stop automatic telemetry updates during sampling
         self.acres = self.spin_acres.value()
         self.req_tests = self._calc_required_tests(self.acres)
         self.captured_samples = []
@@ -676,6 +698,7 @@ class SoilTestPage(QWidget):
 
         # Switch back to View 0 (Dashboard View)
         self.stack.setCurrentIndex(0)
+        self.telemetry_timer.start(2000)
 
     def _download_pdf_report(self):
         if not self.current_acreage_data:

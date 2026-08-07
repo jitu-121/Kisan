@@ -4,7 +4,7 @@ Scoped QSS styling to eliminate all wireframe box outlines on child widgets.
 Matches reference UI design mockup pixel-for-pixel with clean dark navy aesthetics.
 """
 
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -39,7 +39,13 @@ class DashboardPage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.sensor_widgets = {}
         self._init_ui()
+
+        # Telemetry timer for real-time sensor updates (checks every 2 seconds)
+        self.telemetry_timer = QTimer(self)
+        self.telemetry_timer.timeout.connect(self._run_realtime_scan)
+        self.telemetry_timer.start(2000)
 
     def _init_ui(self):
         self.setStyleSheet(f"background-color: {COLOR_BACKGROUND};")
@@ -81,18 +87,18 @@ class DashboardPage(QWidget):
         layout.setSpacing(6)
 
         data = SensorService.read_sensor_data()
-        is_online = data.get("is_online", False)
 
         sensors = [
-            ("pH", data["display_values"]["ph"], data["tags"]["ph"], "fa5s.flask", "#38bdf8"),
-            ("Nitrogen (N)", data["display_values"]["nitrogen"], data["tags"]["nitrogen"], "fa5s.seedling", "#22c55e"),
-            ("Phosphorus (P)", data["display_values"]["phosphorus"], data["tags"]["phosphorus"], "fa5s.tint", "#f59e0b"),
-            ("Potassium (K)", data["display_values"]["potassium"], data["tags"]["potassium"], "fa5s.leaf", "#10b981"),
-            ("Moisture", data["display_values"]["moisture"], data["tags"]["moisture"], "fa5s.tint", "#06b6d4"),
+            ("ph", "pH", data["display_values"]["ph"], data["tags"]["ph"], "fa5s.flask", "#38bdf8"),
+            ("nitrogen", "Nitrogen (N)", data["display_values"]["nitrogen"], data["tags"]["nitrogen"], "fa5s.seedling", "#22c55e"),
+            ("phosphorus", "Phosphorus (P)", data["display_values"]["phosphorus"], data["tags"]["phosphorus"], "fa5s.tint", "#f59e0b"),
+            ("potassium", "Potassium (K)", data["display_values"]["potassium"], data["tags"]["potassium"], "fa5s.leaf", "#10b981"),
+            ("moisture", "Moisture", data["display_values"]["moisture"], data["tags"]["moisture"], "fa5s.tint", "#06b6d4"),
         ]
 
+        self.sensor_widgets = {}
 
-        for title, val, tag, icon, icon_color in sensors:
+        for key, title, val, tag, icon, icon_color in sensors:
             card = QFrame(container)
             card.setObjectName("SensorCard")
             card.setFixedHeight(54)
@@ -136,7 +142,27 @@ class DashboardPage(QWidget):
 
             layout.addWidget(card)
 
+            # Store references to update them dynamically
+            self.sensor_widgets[key] = (v_lbl, sub_lbl)
+
         return container
+
+    def _run_realtime_scan(self):
+        if not self.isVisible():
+            return
+
+        data = SensorService.read_sensor_data()
+
+        # Update the sensor strip widgets in real time
+        sensors = ["ph", "nitrogen", "phosphorus", "potassium", "moisture"]
+        for key in sensors:
+            if key in self.sensor_widgets:
+                v_lbl, sub_lbl = self.sensor_widgets[key]
+                v_lbl.setText(data["display_values"].get(key, "--"))
+                
+                # If online, show status tag, otherwise show offline message
+                tag_str = data["tags"].get(key, "")
+                sub_lbl.setText(tag_str)
 
     def _build_crop_recommendation_card(self) -> QWidget:
         card = QFrame(self)
