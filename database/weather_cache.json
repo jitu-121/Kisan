@@ -1,0 +1,57 @@
+{
+    "location": "B\u0101r\u0101mati",
+    "temperature": "25\u00b0C",
+    "condition": "Sunny",
+    "icon": "fa5s.sun",
+    "humidity": "76%",
+    "wind": "22.8 km/h",
+    "rain_chance": "76%",
+    "uv_index": "N/A",
+    "cloud_cover": 8,
+    "updated_at": "07:00 PM",
+    "updated_at_raw": "2026-08-26 19:00:15",
+    "forecast": [
+        {
+            "day": "Thu",
+            "date": "27 Aug",
+            "temp": "30\u00b0C / 23\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "76%"
+        },
+        {
+            "day": "Fri",
+            "date": "28 Aug",
+            "temp": "30\u00b0C / 23\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "98%"
+        },
+        {
+            "day": "Sat",
+            "date": "29 Aug",
+            "temp": "30\u00b0C / 23\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "100%"
+        },
+        {
+            "day": "Sun",
+            "date": "30 Aug",
+            "temp": "29\u00b0C / 23\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "53%"
+        },
+        {
+            "day": "Mon",
+            "date": "31 Aug",
+            "temp": "29\u00b0C / 22\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "46%"
+        }
+    ],
+    "is_offline": false,
+    "from_cache": false
+}
