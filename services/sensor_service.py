@@ -4,7 +4,7 @@ Integrates RS485 Modbus RTU hardware sensor reading over /dev/ttyUSB0.
 When the physical sensor is not attached, returns is_online=False and '--' values.
 """
 
-import os, struct, time
+import json, os, struct, time
 from datetime import datetime
 
 
@@ -34,6 +34,29 @@ def _crc(data: bytes) -> bytes:
 def _s16(v: int) -> int:
     """Convert unsigned 16-bit int to signed 16-bit int."""
     return v - 0x10000 if v >= 0x8000 else v
+
+
+# Absolute path to project root perfect_weights.json
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WEIGHTS_FILE = os.path.join(BASE_DIR, "perfect_weights.json")
+
+_CACHED_WEIGHTS = {"N": {"w": 1.0, "b": 0.0}, "P": {"w": 1.0, "b": 0.0}, "K": {"w": 1.0, "b": 0.0}}
+_CACHED_MTIME = 0.0
+
+
+def _get_weights() -> dict:
+    """Load perfect_weights.json with mtime file caching."""
+    global _CACHED_WEIGHTS, _CACHED_MTIME
+    if os.path.exists(WEIGHTS_FILE):
+        try:
+            mtime = os.path.getmtime(WEIGHTS_FILE)
+            if mtime > _CACHED_MTIME:
+                with open(WEIGHTS_FILE, "r") as f:
+                    _CACHED_WEIGHTS = json.load(f)
+                _CACHED_MTIME = mtime
+        except Exception:
+            pass
+    return _CACHED_WEIGHTS
 
 
 class SensorService:
@@ -90,13 +113,28 @@ class SensorService:
         hw_data = SensorService.read_hardware_sensor()
 
         if hw_data is not None:
+            w_dict = _get_weights()
+
             ph = hw_data["ph"]
-            n = hw_data["nitrogen"]
-            p = hw_data["phosphorus"]
-            k = hw_data["potassium"]
             m = hw_data["moisture"]
             t = hw_data["temperature"]
             ec = hw_data["ec"]
+
+            # Apply latest weights (supports both 1-feature and 2-feature moisture-corrected models)
+            w_n = w_dict.get("N", {}).get("w", 1.0)
+            wm_n = w_dict.get("N", {}).get("w_moisture", 0.0)
+            b_n = w_dict.get("N", {}).get("b", 0.0)
+            n = round((w_n * hw_data["nitrogen"]) + (wm_n * m) + b_n, 1)
+
+            w_p = w_dict.get("P", {}).get("w", 1.0)
+            wm_p = w_dict.get("P", {}).get("w_moisture", 0.0)
+            b_p = w_dict.get("P", {}).get("b", 0.0)
+            p = round((w_p * hw_data["phosphorus"]) + (wm_p * m) + b_p, 1)
+
+            w_k = w_dict.get("K", {}).get("w", 1.0)
+            wm_k = w_dict.get("K", {}).get("w_moisture", 0.0)
+            b_k = w_dict.get("K", {}).get("b", 0.0)
+            k = round((w_k * hw_data["potassium"]) + (wm_k * m) + b_k, 1)
             sample_id = f"SMP-{datetime.now().strftime('%M%S')}"
             return {
                 "is_online": True,
