@@ -33,8 +33,8 @@ class CloudRadarWidget(QWidget):
     def __init__(self, cloud_cover: int = 0, parent=None):
         super().__init__(parent)
         self.cloud_cover = cloud_cover
-        self.setMinimumHeight(280)
-        self.setMaximumHeight(360)
+        self.setMinimumHeight(380)
+        self.setMaximumHeight(650)
         
         # Load composite live radar map (Option B) if available, fallback to base map
         composite_path = "database/weather_radar_composite.jpg"
@@ -79,85 +79,120 @@ class WeatherPage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
 
 
         # Get Real/Cached Weather Data
         w = WeatherService.get_weather("Baramati", location_permission_enabled=True)
         is_offline = w.get("is_offline", False)
         from_cache = w.get("from_cache", False)
+        synced_ago = w.get("synced_ago", "2h ago")
+        agronomy = w.get("agronomy", {})
+        ai_advisory = w.get("ai_advisory", "")
 
         # Header Row with Location and Online/Offline Badge
         hdr_layout = QHBoxLayout()
         hdr = QLabel(f"Live Weather Forecast — {w['location']}", self)
-        hdr.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 22px; font-weight: 700; font-family: {FONT_FAMILY};")
+        hdr.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 20px; font-weight: 700; font-family: {FONT_FAMILY};")
         hdr_layout.addWidget(hdr)
 
         status_lbl = QLabel(self)
         if is_offline:
-            status_lbl.setText(" Offline (Showing Cache)")
-            status_lbl.setStyleSheet("color: #ffaa00; font-size: 13px; font-weight: 700; background-color: #332200; border: 1px solid #ffaa00; border-radius: 4px; padding: 3px 8px;")
+            status_lbl.setText(f" ⚡ Edge Cache Active • {synced_ago}")
+            status_lbl.setStyleSheet("color: #ffaa00; font-size: 12px; font-weight: 700; background-color: #332200; border: 1px solid #ffaa00; border-radius: 4px; padding: 2px 6px;")
         elif from_cache:
-            status_lbl.setText(f" Cached (Expires: {w['updated_at']})")
-            status_lbl.setStyleSheet("color: #77dd77; font-size: 13px; font-weight: 700; background-color: #113311; border: 1px solid #77dd77; border-radius: 4px; padding: 3px 8px;")
+            status_lbl.setText(f" ⚡ Edge Cache Active • {synced_ago}")
+            status_lbl.setStyleSheet("color: #77dd77; font-size: 12px; font-weight: 700; background-color: #113311; border: 1px solid #77dd77; border-radius: 4px; padding: 2px 6px;")
         else:
-            status_lbl.setText(" Live Updated")
-            status_lbl.setStyleSheet("color: #55ff55; font-size: 13px; font-weight: 700; background-color: #003300; border: 1px solid #55ff55; border-radius: 4px; padding: 3px 8px;")
+            status_lbl.setText(" 🟢 Live Updated")
+            status_lbl.setStyleSheet("color: #55ff55; font-size: 12px; font-weight: 700; background-color: #003300; border: 1px solid #55ff55; border-radius: 4px; padding: 2px 6px;")
         
         hdr_layout.addWidget(status_lbl)
         hdr_layout.addStretch(1)
         
         # Sub-header detailing last updated timestamp
         time_info = QLabel(f"Last updated: {w['updated_at']}", self)
-        time_info.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 13px;")
+        time_info.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 12px;")
         hdr_layout.addWidget(time_info)
         
         layout.addLayout(hdr_layout)
 
-        # Main Row containing Current Weather Card & Cloud Cover Card side-by-side (saves space on 7")
+        # Main Row containing Current Weather Card & Cloud Cover Card side-by-side
         main_cards_row = QHBoxLayout()
-        main_cards_row.setSpacing(12)
+        main_cards_row.setSpacing(10)
 
-        # Current Weather Card (Left)
+        # Current Weather Card with Agronomy Metrics (Left) - Compact Vertical Height
         main_card = QFrame(self)
         main_card.setStyleSheet("background-color: #101910; border: 1px solid #1a291a; border-radius: 8px;")
-        main_card.setMinimumHeight(130)
-        mc_layout = QHBoxLayout(main_card)
-        mc_layout.setContentsMargins(18, 14, 18, 14)
+        main_card.setMinimumHeight(115)
+        main_card.setMaximumHeight(125)
+        mc_main_layout = QVBoxLayout(main_card)
+        mc_main_layout.setContentsMargins(12, 6, 12, 6)
+        mc_main_layout.setSpacing(4)
 
+        mc_layout = QHBoxLayout()
         w_ic = QLabel(main_card)
-        w_ic.setPixmap(qta.icon(w["icon"], color=COLOR_PRIMARY_ACCENT).pixmap(56, 56))
+        w_ic.setPixmap(qta.icon(w["icon"], color=COLOR_PRIMARY_ACCENT).pixmap(40, 40))
 
         w_info = QVBoxLayout()
         w_temp = QLabel(f"{w['temperature']} • {w['condition']}", main_card)
-        w_temp.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 24px; font-weight: 800; font-family: {FONT_FAMILY};")
+        w_temp.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 20px; font-weight: 800; font-family: {FONT_FAMILY};")
 
         w_sub = QLabel(
-            f"Humidity: {w['humidity']} • Wind: {w['wind']}\nRain Probability: {w['rain_chance']}",
+            f"Humidity: {w['humidity']} • Wind: {w['wind']} • Rain Prob: {w['rain_chance']}",
             main_card
         )
-        w_sub.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 14px; line-height: 18px;")
+        w_sub.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 12px;")
 
         w_info.addWidget(w_temp)
         w_info.addWidget(w_sub)
 
         mc_layout.addWidget(w_ic)
         mc_layout.addLayout(w_info, 1)
+        mc_main_layout.addLayout(mc_layout)
+
+        # Agronomy Metrics Micro-Strip (ET0, Soil Leaching Risk, Spray Window)
+        agronomy_strip = QHBoxLayout()
+        agronomy_strip.setSpacing(6)
+
+        et0_val = agronomy.get("et0", "-- mm/day")
+        leaching = agronomy.get("leaching_risk", "--")
+        spray_status = agronomy.get("spray_status", "--")
+
+        et_chip = QLabel(f"💧 ET₀: {et0_val}", main_card)
+        et_chip.setStyleSheet("background-color: #182818; color: #aaffaa; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; border: 1px solid #284428;")
+
+        leach_color = "#ff6666" if "CRITICAL" in leaching or "HIGH" in leaching else "#ffcc00" if "MODERATE" in leaching else "#77dd77"
+        leach_bg = "#331111" if "CRITICAL" in leaching or "HIGH" in leaching else "#332a00" if "MODERATE" in leaching else "#113311"
+        leach_chip = QLabel(f"🧪 Leaching: {leaching}", main_card)
+        leach_chip.setStyleSheet(f"background-color: {leach_bg}; color: {leach_color}; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; border: 1px solid {leach_color};")
+
+        spray_color = "#77dd77" if spray_status == "OPTIMAL" else "#ffcc00" if spray_status == "MODERATE" else "#ff6666"
+        spray_chip = QLabel(f"🌬️ Spray Window: {spray_status}", main_card)
+        spray_chip.setStyleSheet(f"background-color: #0f2028; color: {spray_color}; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 4px; border: 1px solid #1a3848;")
+
+        agronomy_strip.addWidget(et_chip)
+        agronomy_strip.addWidget(leach_chip)
+        agronomy_strip.addWidget(spray_chip)
+        agronomy_strip.addStretch(1)
+
+        mc_main_layout.addLayout(agronomy_strip)
         main_cards_row.addWidget(main_card, 3)
 
-        # Option A: Visual Cloud Coverage Card (Right)
+        # Option A: Visual Cloud Coverage Card (Right) - Compact Vertical Height
         cloud_card = QFrame(self)
         cloud_card.setStyleSheet("background-color: #101910; border: 1px solid #1a291a; border-radius: 8px;")
-        cloud_card.setMinimumHeight(130)
+        cloud_card.setMinimumHeight(115)
+        cloud_card.setMaximumHeight(125)
         cc_layout = QVBoxLayout(cloud_card)
-        cc_layout.setContentsMargins(18, 12, 18, 12)
-        cc_layout.setSpacing(6)
+        cc_layout.setContentsMargins(12, 6, 12, 6)
+        cc_layout.setSpacing(4)
 
         cc_title_layout = QHBoxLayout()
         cc_ic = QLabel(cloud_card)
-        cc_ic.setPixmap(qta.icon("fa5s.cloud", color=COLOR_PRIMARY_ACCENT).pixmap(20, 20))
+        cc_ic.setPixmap(qta.icon("fa5s.cloud", color=COLOR_PRIMARY_ACCENT).pixmap(16, 16))
         cc_title = QLabel("Sky Cloud Cover", cloud_card)
-        cc_title.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 15px; font-weight: 700; font-family: {FONT_FAMILY};")
+        cc_title.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 13px; font-weight: 700; font-family: {FONT_FAMILY};")
         cc_title_layout.addWidget(cc_ic)
         cc_title_layout.addWidget(cc_title)
         cc_title_layout.addStretch(1)
@@ -176,8 +211,8 @@ class WeatherPage(QWidget):
                 text-align: center;
                 color: #ffffff;
                 font-weight: bold;
-                height: 20px;
-                font-size: 12px;
+                height: 16px;
+                font-size: 10px;
             }
             QProgressBar::chunk {
                 background-color: #2e7d32;
@@ -188,15 +223,15 @@ class WeatherPage(QWidget):
 
         # Dynamic agriculture advice based on cloud cover
         if cloud_val < 25:
-            adv_text = "Clear Sky: Excellent for solar energy generation & field work."
+            adv_text = "Clear Sky: Excellent for solar generation & field operations."
         elif cloud_val < 65:
-            adv_text = "Partial Clouds: Normal sunlight. Suitable for outdoor crop tasks."
+            adv_text = "Partial Clouds: Normal sunlight. Suitable for crop work."
         else:
-            adv_text = "Heavy Clouds: Reduced light. Monitor for sudden showers."
+            adv_text = "Heavy Clouds: Reduced light. Monitor for precipitation."
         
         cc_adv = QLabel(adv_text, cloud_card)
         cc_adv.setWordWrap(True)
-        cc_adv.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 13px; font-style: italic;")
+        cc_adv.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 11px; font-style: italic;")
         cc_layout.addWidget(cc_adv)
 
         main_cards_row.addWidget(cloud_card, 2)
@@ -204,29 +239,29 @@ class WeatherPage(QWidget):
 
         # 5-Day Forecast Strip Header
         f_hdr = QLabel("5-Day Weather Forecast:", self)
-        f_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 14px; font-weight: 700; font-family: {FONT_FAMILY};")
+        f_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 12px; font-weight: 700; font-family: {FONT_FAMILY};")
         layout.addWidget(f_hdr)
 
-        # 5-Day Forecast Cards Row
+        # 5-Day Forecast Cards Row - Compact Height
         f_row = QHBoxLayout()
-        f_row.setSpacing(10)
+        f_row.setSpacing(6)
 
         for day in w["forecast"]:
             f_box = QFrame(self)
             f_box.setStyleSheet("background-color: #0d140d; border: 1px solid #182418; border-radius: 6px;")
-            f_box.setMinimumHeight(95)
+            f_box.setMinimumHeight(80)
             fb_layout = QVBoxLayout(f_box)
-            fb_layout.setContentsMargins(6, 6, 6, 6)
+            fb_layout.setContentsMargins(3, 3, 3, 3)
             fb_layout.setAlignment(Qt.AlignCenter)
-            fb_layout.setSpacing(2)
+            fb_layout.setSpacing(1)
 
             d_lbl = QLabel(f"{day['day']} ({day['date']})", f_box)
             d_lbl.setAlignment(Qt.AlignCenter)
-            d_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 11px; font-weight: 700; font-family: {FONT_FAMILY};")
+            d_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 10px; font-weight: 700; font-family: {FONT_FAMILY};")
 
             d_ic = QLabel(f_box)
             d_ic.setAlignment(Qt.AlignCenter)
-            d_ic.setPixmap(qta.icon(day["icon"], color=COLOR_PRIMARY_ACCENT).pixmap(24, 24))
+            d_ic.setPixmap(qta.icon(day["icon"], color=COLOR_PRIMARY_ACCENT).pixmap(20, 20))
 
             t_lbl = QLabel(day["temp"], f_box)
             t_lbl.setAlignment(Qt.AlignCenter)
@@ -245,13 +280,74 @@ class WeatherPage(QWidget):
 
         layout.addLayout(f_row)
 
+        # Smart AI Field Advisory Collapsible Button (The AI Link)
+        if ai_advisory:
+            is_warn = "Heavy rainfall" in ai_advisory or "Unfavorable" in ai_advisory or "High heat" in ai_advisory
+            btn_bg = "#221700" if is_warn else "#0a1e0d"
+            btn_border = "#d99000" if is_warn else "#28a745"
+            btn_color = "#ffcc00" if is_warn else "#55ff55"
+            card_bg = "#140f02" if is_warn else "#061408"
+
+            from PyQt5.QtWidgets import QPushButton
+
+            adv_btn = QPushButton(self)
+            adv_btn.setText(" ⚠️  AI Field Action Advisory  •  Click to View Insights  ▼")
+            adv_btn.setCursor(Qt.PointingHandCursor)
+            adv_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {btn_bg};
+                    border: 1px solid {btn_border};
+                    color: {btn_color};
+                    font-size: 12px;
+                    font-weight: 700;
+                    font-family: {FONT_FAMILY};
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    text-align: left;
+                }}
+                QPushButton:hover {{
+                    background-color: #382600;
+                    color: #ffffff;
+                    border-color: #ffaa00;
+                }}
+            """)
+
+            adv_card = QFrame(self)
+            adv_card.setStyleSheet(f"background-color: {card_bg}; border: 1px solid {btn_border}; border-radius: 8px;")
+            adv_card.setVisible(False)  # Hidden by default until clicked!
+
+            ac_layout = QHBoxLayout(adv_card)
+            ac_layout.setContentsMargins(14, 10, 14, 10)
+            ac_layout.setSpacing(0)
+
+            # Pure advisory text without icon or inner rectangle border
+            adv_txt = QLabel(ai_advisory, adv_card)
+            adv_txt.setWordWrap(True)
+            adv_txt.setStyleSheet(f"color: #f0f0f0; font-size: 12px; font-weight: 500; font-family: {FONT_FAMILY}; line-height: 18px; border: none; background: transparent;")
+
+            ac_layout.addWidget(adv_txt, 1)
+
+            def _toggle_advisory():
+                currently_visible = adv_card.isVisible()
+                adv_card.setVisible(not currently_visible)
+                if not currently_visible:
+                    adv_btn.setText(" ⚠️  AI Field Action Advisory  •  Hide Insights  ▲")
+                else:
+                    adv_btn.setText(" ⚠️  AI Field Action Advisory  •  Click to View Insights  ▼")
+
+            adv_btn.clicked.connect(_toggle_advisory)
+
+            layout.addWidget(adv_btn)
+            layout.addWidget(adv_card)
+
         # Cloud Radar Section Header
         r_hdr = QLabel("Live Cloud Coverage Radar Map:", self)
-        r_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 14px; font-weight: 700; font-family: {FONT_FAMILY};")
+        r_hdr.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 12px; font-weight: 700; font-family: {FONT_FAMILY};")
         layout.addWidget(r_hdr)
 
-        # Cloud Radar Map Widget
+        # Cloud Radar Map Widget (Expanded height with stretch)
         self.radar_widget = CloudRadarWidget(cloud_val, self)
-        layout.addWidget(self.radar_widget)
+        layout.addWidget(self.radar_widget, 1)
+
 
 

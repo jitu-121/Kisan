@@ -1,57 +1,68 @@
 {
     "location": "B\u0101r\u0101mati",
-    "temperature": "25\u00b0C",
-    "condition": "Sunny",
-    "icon": "fa5s.sun",
-    "humidity": "76%",
-    "wind": "22.8 km/h",
-    "rain_chance": "76%",
+    "temperature": "24\u00b0C",
+    "condition": "Partly Cloudy",
+    "icon": "fa5s.cloud-sun",
+    "humidity": "80%",
+    "wind": "20.7 km/h",
+    "rain_chance": "100%",
     "uv_index": "N/A",
-    "cloud_cover": 8,
-    "updated_at": "07:00 PM",
-    "updated_at_raw": "2026-08-26 19:00:15",
+    "cloud_cover": 26,
+    "updated_at": "07:16 PM",
+    "updated_at_raw": "2026-08-29 19:16:21",
+    "synced_ago": "Just now",
     "forecast": [
-        {
-            "day": "Thu",
-            "date": "27 Aug",
-            "temp": "30\u00b0C / 23\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "76%"
-        },
-        {
-            "day": "Fri",
-            "date": "28 Aug",
-            "temp": "30\u00b0C / 23\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "98%"
-        },
-        {
-            "day": "Sat",
-            "date": "29 Aug",
-            "temp": "30\u00b0C / 23\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "100%"
-        },
         {
             "day": "Sun",
             "date": "30 Aug",
-            "temp": "29\u00b0C / 23\u00b0C",
+            "temp": "30\u00b0C / 22\u00b0C",
             "condition": "Drizzle",
             "icon": "fa5s.cloud-rain",
-            "rain_chance": "53%"
+            "rain_chance": "67%"
         },
         {
             "day": "Mon",
             "date": "31 Aug",
-            "temp": "29\u00b0C / 22\u00b0C",
+            "temp": "31\u00b0C / 22\u00b0C",
             "condition": "Drizzle",
             "icon": "fa5s.cloud-rain",
-            "rain_chance": "46%"
+            "rain_chance": "84%"
+        },
+        {
+            "day": "Tue",
+            "date": "01 Sep",
+            "temp": "30\u00b0C / 22\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "93%"
+        },
+        {
+            "day": "Wed",
+            "date": "02 Sep",
+            "temp": "28\u00b0C / 22\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "83%"
+        },
+        {
+            "day": "Thu",
+            "date": "03 Sep",
+            "temp": "28\u00b0C / 23\u00b0C",
+            "condition": "Cloudy",
+            "icon": "fa5s.cloud",
+            "rain_chance": "70%"
         }
     ],
+    "agronomy": {
+        "et0": "2.8 mm/day",
+        "et0_val": 2.8,
+        "et0_desc": "Moderate Evaporation",
+        "leaching_risk": "CRITICAL (91%)",
+        "leaching_risk_pct": 91,
+        "spray_status": "UNFAVORABLE",
+        "max_rain": 93
+    },
+    "ai_advisory": "Heavy rainfall cluster detected (Next 3 Days Max Rain >93%). High risk of nutrient runoff and root leaching. Postpone all Nitrogen/Urea soil application until dry spell.",
     "is_offline": false,
     "from_cache": false
 }

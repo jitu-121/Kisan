@@ -75,13 +75,28 @@ MAIN_WINDOW_STYLESHEET = f"""
         color: #ffffff;
     }}
     QScrollBar:vertical {{
+        border: none;
         background: #0b101d;
-        width: 8px;
-        border-radius: 4px;
+        width: 6px;
+        margin: 0px;
+        border-radius: 3px;
     }}
     QScrollBar::handle:vertical {{
-        background: #1e293b;
-        border-radius: 4px;
+        background: #166534;
+        min-height: 20px;
+        border-radius: 3px;
+    }}
+    QScrollBar::handle:vertical:hover {{
+        background: #22c55e;
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+        border: none;
+        background: none;
+        height: 0px;
+    }}
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+        border: none;
+        background: none;
     }}
 """
 
