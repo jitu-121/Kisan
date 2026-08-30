@@ -120,9 +120,9 @@ class SensorService:
                 temperature=round(_s16(r[1]) / 10.0, 1),
                 ec=r[2],
                 ph=round(r[3] / 10.0, 1),
-                nitrogen=float(r[4]),
-                phosphorus=float(r[5]),
-                potassium=float(r[6]),
+                nitrogen=round(float(r[4]) * 2.24, 1),
+                phosphorus=round(float(r[5]) * 2.24, 1),
+                potassium=round(float(r[6]) * 2.24, 1),
                 salinity=float(r[7]),
                 tds=float(r[8]),
                 is_hardware=True

@@ -286,14 +286,14 @@ def run_calibration_session():
 
     print("✅ Moisture Condition Met (>= 70% Slurry Saturation State)!")
 
-    print(f"\n📡 RAW RS485 SENSOR TELEMETRY CAPTURED:")
+    print(f"\n📡 SENSOR TELEMETRY CAPTURED (kg/hector):")
     print(f"   Nitrogen N   : {n_raw} kg/hector")
     print(f"   Phosphorus P : {p_raw} kg/hector")
     print(f"   Potassium K  : {k_raw} kg/hector")
     print(f"   pH Level     : {ph_raw}")
 
     print("\n--------------------------------------------------")
-    print("🧪 ENTER GROUND-TRUTH WET-CHEMISTRY LAB TEST RESULTS:")
+    print("🧪 ENTER GROUND-TRUTH WET-CHEMISTRY LAB TEST RESULTS (kg/hector):")
     print("--------------------------------------------------")
 
     try:
