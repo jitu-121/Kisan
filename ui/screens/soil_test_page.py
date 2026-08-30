@@ -462,9 +462,9 @@ class SoilTestPage(QWidget):
     def _build_sensor_cards(self):
         sensor_specs = [
             ("ph", "pH Level", "fa5s.vial", "#38bdf8", "pH"),
-            ("nitrogen", "Nitrogen (N)", "fa5s.seedling", "#22c55e", "mg/kg"),
-            ("phosphorus", "Phosphorus (P)", "fa5s.fire", "#f59e0b", "mg/kg"),
-            ("potassium", "Potassium (K)", "fa5s.cubes", "#10b981", "mg/kg"),
+            ("nitrogen", "Nitrogen (N)", "fa5s.seedling", "#22c55e", "kg/hector"),
+            ("phosphorus", "Phosphorus (P)", "fa5s.fire", "#f59e0b", "kg/hector"),
+            ("potassium", "Potassium (K)", "fa5s.cubes", "#10b981", "kg/hector"),
             ("moisture", "Soil Moisture", "fa5s.water", "#06b6d4", "%"),
             ("temperature", "Soil Temp", "fa5s.thermometer-half", "#f43f5e", "°C"),
         ]
@@ -617,9 +617,9 @@ class SoilTestPage(QWidget):
 
         is_online = sample_data.get("is_online", False)
         ph_str = f"{sample_data['ph']:.1f}" if is_online else "--"
-        n_str = f"{sample_data['nitrogen']:.0f} mg/kg" if is_online else "--"
-        p_str = f"{sample_data['phosphorus']:.0f} mg/kg" if is_online else "--"
-        k_str = f"{sample_data['potassium']:.0f} mg/kg" if is_online else "--"
+        n_str = f"{sample_data['nitrogen']:.0f} kg/hector" if is_online else "--"
+        p_str = f"{sample_data['phosphorus']:.0f} kg/hector" if is_online else "--"
+        k_str = f"{sample_data['potassium']:.0f} kg/hector" if is_online else "--"
         m_str = f"{sample_data['moisture']:.1f} %" if is_online else "--"
         t_str = f"{sample_data['temperature']:.1f} °C" if is_online else "--"
 
@@ -678,9 +678,9 @@ class SoilTestPage(QWidget):
 
         disp_map = {
             "ph": (f"{avg_ph:.2f}", "pH"),
-            "nitrogen": (f"{avg_n:.1f}", "mg/kg"),
-            "phosphorus": (f"{avg_p:.1f}", "mg/kg"),
-            "potassium": (f"{avg_k:.1f}", "mg/kg"),
+            "nitrogen": (f"{avg_n:.1f}", "kg/hector"),
+            "phosphorus": (f"{avg_p:.1f}", "kg/hector"),
+            "potassium": (f"{avg_k:.1f}", "kg/hector"),
             "moisture": (f"{avg_m:.1f}", "%"),
             "temperature": (f"{avg_t:.1f}", "°C"),
         }

@@ -175,9 +175,9 @@ class PDFExporter:
 
         params_map = [
             ("pH Level", f"{avg_data['ph']:.2f} pH", avg_data['tags']['ph']),
-            ("Nitrogen (N)", f"{avg_data['nitrogen']:.1f} mg/kg", avg_data['tags']['nitrogen']),
-            ("Phosphorus (P)", f"{avg_data['phosphorus']:.1f} mg/kg", avg_data['tags']['phosphorus']),
-            ("Potassium (K)", f"{avg_data['potassium']:.1f} mg/kg", avg_data['tags']['potassium']),
+            ("Nitrogen (N)", f"{avg_data['nitrogen']:.1f} kg/hector", avg_data['tags']['nitrogen']),
+            ("Phosphorus (P)", f"{avg_data['phosphorus']:.1f} kg/hector", avg_data['tags']['phosphorus']),
+            ("Potassium (K)", f"{avg_data['potassium']:.1f} kg/hector", avg_data['tags']['potassium']),
             ("Soil Moisture", f"{avg_data['moisture']:.1f} %", avg_data['tags']['moisture']),
             ("Soil Temperature", f"{avg_data['temperature']:.1f} °C", avg_data['tags']['temperature']),
         ]
@@ -199,7 +199,7 @@ class PDFExporter:
         # Breakdown Table of Individual Probe Samples
         if samples_data:
             elements.append(Paragraph("<b>Individual Probe Sample Breakdown</b>", title_style))
-            samp_rows = [["Sample #", "pH", "N (mg/kg)", "P (mg/kg)", "K (mg/kg)", "Moisture (%)", "Temp (°C)"]]
+            samp_rows = [["Sample #", "pH", "N (kg/hector)", "P (kg/hector)", "K (kg/hector)", "Moisture (%)", "Temp (°C)"]]
             for idx, s in enumerate(samples_data, start=1):
                 samp_rows.append([
                     f"Sample #{idx}",

@@ -180,9 +180,9 @@ class SensorService:
                 "ec": ec,
                 "display_values": {
                     "ph": f"{ph}",
-                    "nitrogen": f"{n} mg/kg",
-                    "phosphorus": f"{p} mg/kg",
-                    "potassium": f"{k} mg/kg",
+                    "nitrogen": f"{n} kg/hector",
+                    "phosphorus": f"{p} kg/hector",
+                    "potassium": f"{k} kg/hector",
                     "moisture": f"{m} %",
                     "temperature": f"{t} °C",
                 },
@@ -236,16 +236,16 @@ class SensorService:
             elif value > 7.5: return "Alkaline (High)"
             return "Neutral (Optimal)"
         elif parameter == "nitrogen":
-            if value < 50: return "Low"
-            elif value > 90: return "High"
+            if value < 112: return "Low"
+            elif value > 200: return "High"
             return "Optimal"
         elif parameter == "phosphorus":
-            if value < 30: return "Low"
-            elif value > 55: return "High"
+            if value < 67: return "Low"
+            elif value > 123: return "High"
             return "Optimal"
         elif parameter == "potassium":
-            if value < 150: return "Low"
-            elif value > 220: return "High"
+            if value < 336: return "Low"
+            elif value > 492: return "High"
             return "Optimal"
         elif parameter == "moisture":
             if value < 30: return "Dry (Low)"

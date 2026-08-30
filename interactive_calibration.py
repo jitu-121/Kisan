@@ -137,8 +137,12 @@ def fit_nutrient_model(nutrient: str, rows: list) -> dict:
                 preds_loo[test_idx] = m.predict(X_raw[test_idx])
             ss_res = np.sum((y - preds_loo) ** 2)
             ss_tot = np.sum((y - np.mean(y)) ** 2)
-            r2_cv = float(1 - ss_res / ss_tot) if ss_tot > 1e-9 else None
-            rmse_cv = float(np.sqrt(np.mean((y - preds_loo) ** 2)))
+            r2_val = float(1 - ss_res / ss_tot) if ss_tot > 1e-9 else None
+            rmse_val = float(np.sqrt(np.mean((y - preds_loo) ** 2)))
+            if r2_val is not None and not np.isnan(r2_val) and not np.isinf(r2_val):
+                r2_cv = r2_val
+            if rmse_val is not None and not np.isnan(rmse_val) and not np.isinf(rmse_val):
+                rmse_cv = rmse_val
         except Exception:
             pass  # if CV fails for any reason, we still have the plain fit
 
@@ -173,26 +177,38 @@ def refit_all_nutrients_from_csv(weights: dict) -> dict:
     """Reads the full calibration_dataset.csv and refits N/P/K models."""
     rows_by_nutrient = {n: [] for n in NUTRIENTS}
 
-    with open(CSV_FILE, "r", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            moisture = float(row["moisture"])
-            rows_by_nutrient["N"].append(
-                {"raw": float(row["n_raw"]), "moisture": moisture, "lab": float(row["n_lab"])}
-            )
-            rows_by_nutrient["P"].append(
-                {"raw": float(row["p_raw"]), "moisture": moisture, "lab": float(row["p_lab"])}
-            )
-            rows_by_nutrient["K"].append(
-                {"raw": float(row["k_raw"]), "moisture": moisture, "lab": float(row["k_lab"])}
-            )
+    if os.path.exists(CSV_FILE):
+        with open(CSV_FILE, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if not row:
+                    continue
+                try:
+                    moisture = float(row["moisture"])
+                    rows_by_nutrient["N"].append(
+                        {"raw": float(row["n_raw"]), "moisture": moisture, "lab": float(row["n_lab"])}
+                    )
+                    rows_by_nutrient["P"].append(
+                        {"raw": float(row["p_raw"]), "moisture": moisture, "lab": float(row["p_lab"])}
+                    )
+                    rows_by_nutrient["K"].append(
+                        {"raw": float(row["k_raw"]), "moisture": moisture, "lab": float(row["k_lab"])}
+                    )
+                except (ValueError, KeyError):
+                    continue
 
     new_weights = {}
     for nutrient in NUTRIENTS:
         fit_result = fit_nutrient_model(nutrient, rows_by_nutrient[nutrient])
         prev = weights.get(nutrient, {})
-        prev_r2 = prev.get("r2")
 
+        # If not enough samples yet to fit a line, preserve existing manual/preset weights
+        if fit_result["sample_count"] < MIN_SAMPLES_FOR_FIT and prev:
+            fit_result["w"] = prev.get("w", fit_result["w"])
+            fit_result["b"] = prev.get("b", fit_result["b"])
+            fit_result["w_moisture"] = prev.get("w_moisture", fit_result["w_moisture"])
+
+        prev_r2 = prev.get("r2")
         new_weights[nutrient] = fit_result
 
         # Guardrail: only "accept" a refit that doesn't get WORSE than what
@@ -219,9 +235,9 @@ def read_probe_telemetry():
     if choice == "y":
         try:
             m = float(input("   Enter Raw Moisture (%): "))
-            n = float(input("   Enter Raw Nitrogen N (mg/kg): "))
-            p = float(input("   Enter Raw Phosphorus P (mg/kg): "))
-            k = float(input("   Enter Raw Potassium K (mg/kg): "))
+            n = float(input("   Enter Raw Nitrogen N (kg/hector): "))
+            p = float(input("   Enter Raw Phosphorus P (kg/hector): "))
+            k = float(input("   Enter Raw Potassium K (kg/hector): "))
             ph = float(input("   Enter Raw pH: "))
             return {"moisture": m, "nitrogen": n, "phosphorus": p, "potassium": k, "ph": ph}
         except ValueError:
@@ -231,7 +247,16 @@ def read_probe_telemetry():
 
 def run_calibration_session():
     weights = load_weights()
-    sample_num = weights["N"]["sample_count"] + 1
+
+    # Safely get current sample count
+    sample_count = weights.get("N", {}).get("sample_count")
+    if sample_count is None:
+        if os.path.exists(CSV_FILE):
+            with open(CSV_FILE, "r", newline="") as f:
+                sample_count = max(0, sum(1 for row in csv.DictReader(f)))
+        else:
+            sample_count = 0
+    sample_num = sample_count + 1
 
     print("\n==================================================")
     print(f" 🧪 KISAN RS485 SENSOR CALIBRATION SESSION - SAMPLE #{sample_num}")
@@ -262,9 +287,9 @@ def run_calibration_session():
     print("✅ Moisture Condition Met (>= 70% Slurry Saturation State)!")
 
     print(f"\n📡 RAW RS485 SENSOR TELEMETRY CAPTURED:")
-    print(f"   Nitrogen N   : {n_raw} mg/kg")
-    print(f"   Phosphorus P : {p_raw} mg/kg")
-    print(f"   Potassium K  : {k_raw} mg/kg")
+    print(f"   Nitrogen N   : {n_raw} kg/hector")
+    print(f"   Phosphorus P : {p_raw} kg/hector")
+    print(f"   Potassium K  : {k_raw} kg/hector")
     print(f"   pH Level     : {ph_raw}")
 
     print("\n--------------------------------------------------")
@@ -272,9 +297,9 @@ def run_calibration_session():
     print("--------------------------------------------------")
 
     try:
-        n_lab = float(input("   Enter Lab Nitrogen N value (mg/kg): "))
-        p_lab = float(input("   Enter Lab Phosphorus P value (mg/kg): "))
-        k_lab = float(input("   Enter Lab Potassium K value (mg/kg): "))
+        n_lab = float(input("   Enter Lab Nitrogen N value (kg/hector): "))
+        p_lab = float(input("   Enter Lab Phosphorus P value (kg/hector): "))
+        k_lab = float(input("   Enter Lab Potassium K value (kg/hector): "))
     except ValueError:
         print("❌ Invalid numeric input! Session cancelled.")
         return
