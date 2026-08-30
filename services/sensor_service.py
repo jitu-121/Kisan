@@ -155,17 +155,20 @@ class SensorService:
             w_n = w_dict.get("N", {}).get("w", 1.0)
             wm_n = w_dict.get("N", {}).get("w_moisture", 0.0)
             b_n = w_dict.get("N", {}).get("b", 0.0)
-            n = round((w_n * hw_data["nitrogen"]) + (wm_n * m) + b_n, 1)
+            raw_n = hw_data["nitrogen"]
+            n = 0.0 if raw_n == 0 else max(0.0, round((w_n * raw_n) + (wm_n * m) + b_n, 1))
 
             w_p = w_dict.get("P", {}).get("w", 1.0)
             wm_p = w_dict.get("P", {}).get("w_moisture", 0.0)
             b_p = w_dict.get("P", {}).get("b", 0.0)
-            p = round((w_p * hw_data["phosphorus"]) + (wm_p * m) + b_p, 1)
+            raw_p = hw_data["phosphorus"]
+            p = 0.0 if raw_p == 0 else max(0.0, round((w_p * raw_p) + (wm_p * m) + b_p, 1))
 
             w_k = w_dict.get("K", {}).get("w", 1.0)
             wm_k = w_dict.get("K", {}).get("w_moisture", 0.0)
             b_k = w_dict.get("K", {}).get("b", 0.0)
-            k = round((w_k * hw_data["potassium"]) + (wm_k * m) + b_k, 1)
+            raw_k = hw_data["potassium"]
+            k = 0.0 if raw_k == 0 else max(0.0, round((w_k * raw_k) + (wm_k * m) + b_k, 1))
             sample_id = f"SMP-{datetime.now().strftime('%M%S')}"
             return {
                 "is_online": True,
