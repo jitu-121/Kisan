@@ -4,7 +4,7 @@ Integrates RS485 Modbus RTU hardware sensor reading over /dev/ttyUSB0.
 When the physical sensor is not attached, returns is_online=False and '--' values.
 """
 
-import json, os, struct, time
+import json, os, struct, threading, time
 from datetime import datetime
 
 
@@ -19,6 +19,32 @@ PORT = "/dev/ttyUSB0"
 BAUDRATE = 4800
 SLAVE = 0x01
 TIMEOUT = 1.0
+
+
+# Background Hardware Polling Cache to avoid blocking GUI main thread
+_CACHED_HW_DATA = None
+_HW_LOCK = threading.Lock()
+_BG_WORKER_STARTED = False
+
+
+def _bg_sensor_polling_worker():
+    global _CACHED_HW_DATA
+    while True:
+        try:
+            data = SensorService.read_hardware_sensor()
+            with _HW_LOCK:
+                _CACHED_HW_DATA = data
+        except Exception:
+            pass
+        time.sleep(1.0)
+
+
+def _ensure_bg_worker():
+    global _BG_WORKER_STARTED
+    if not _BG_WORKER_STARTED:
+        _BG_WORKER_STARTED = True
+        t = threading.Thread(target=_bg_sensor_polling_worker, daemon=True)
+        t.start()
 
 
 def _crc(data: bytes) -> bytes:
@@ -105,12 +131,17 @@ class SensorService:
             return None
 
     @staticmethod
-    def read_sensor_data(simulate_if_offline: bool = False) -> dict:
+    def read_sensor_data(simulate_if_offline: bool = False, direct_read: bool = False) -> dict:
         """
-        Main sensor entry point.
+        Main sensor entry point. Non-blocking when direct_read=False (uses background thread cache).
         If physical sensor is not attached, returns is_online=False and '--' values.
         """
-        hw_data = SensorService.read_hardware_sensor()
+        if direct_read:
+            hw_data = SensorService.read_hardware_sensor()
+        else:
+            _ensure_bg_worker()
+            with _HW_LOCK:
+                hw_data = _CACHED_HW_DATA
 
         if hw_data is not None:
             w_dict = _get_weights()
