@@ -112,8 +112,9 @@ class MainWindow(QMainWindow):
         self.about_page = AboutPage(self)
         self.content_stack.addWidget(self.about_page)
 
-        # Connect Sidebar Selection Signal
+        # Connect Signals
         self.sidebar.item_selected.connect(self._on_sidebar_item_selected)
+        self.top_bar.sidebar_toggle_requested.connect(self._toggle_sidebar)
 
         # --- Initial Startup Mode: Show Splash Screen & Hide TopBar/Sidebar ---
         self.top_bar.hide()
@@ -122,6 +123,10 @@ class MainWindow(QMainWindow):
 
         # Trigger 3-second splash animation start after window opens
         QTimer.singleShot(100, self.splash_screen.start_splash_animation)
+
+    def _toggle_sidebar(self):
+        """Toggle sidebar panel visibility on 3-dash hamburger button click."""
+        self.sidebar.setVisible(not self.sidebar.isVisible())
 
     def _on_splash_finished(self):
         """Called automatically after 3-second splash screen animation finishes."""

@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -27,6 +28,7 @@ class TopBarWidget(QFrame):
     Top Bar Widget matching reference mockup. Height: 42px.
     """
     location_toggle_changed = pyqtSignal(bool)
+    sidebar_toggle_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,11 +55,34 @@ class TopBarWidget(QFrame):
         layout.setContentsMargins(12, 2, 12, 2)
         layout.setSpacing(12)
 
-        # 1. LEFT: Logo + Signal Icon + Date & Time Stack
+        # 1. LEFT: Hamburger Toggle (3 Dashes) + Logo + Signal Icon + Date & Time Stack
         left_widget = QWidget(self)
         left_layout = QHBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
+
+        # Traditional 3-Dashes Hamburger Button
+        self.toggle_btn = QPushButton(left_widget)
+        self.toggle_btn.setFixedSize(30, 30)
+        self.toggle_btn.setCursor(Qt.PointingHandCursor)
+        self.toggle_btn.setToolTip("Toggle Sidebar Navigation")
+        self.toggle_btn.setIcon(qta.icon("fa5s.bars", color=COLOR_PRIMARY_ACCENT))
+        self.toggle_btn.setIconSize(QSize(16, 16))
+        self.toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0d1424;
+                border: 1px solid #1e293b;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #131b2e;
+                border: 1px solid #22c55e;
+            }
+            QPushButton:pressed {
+                background-color: #14532d;
+            }
+        """)
+        self.toggle_btn.clicked.connect(self.sidebar_toggle_requested.emit)
 
         logo_ic = QLabel(left_widget)
         pix = qta.icon("fa5s.seedling", color=COLOR_PRIMARY_ACCENT).pixmap(QSize(20, 20))
@@ -77,6 +102,7 @@ class TopBarWidget(QFrame):
         dt_box.addWidget(self.time_label)
         dt_box.addWidget(self.date_label)
 
+        left_layout.addWidget(self.toggle_btn)
         left_layout.addWidget(logo_ic)
         left_layout.addWidget(signal_ic)
         left_layout.addLayout(dt_box)

@@ -72,11 +72,7 @@ class DashboardPage(QWidget):
 
         layout.addWidget(middle_widget, 1)
 
-        # 3. LOWER ROW: Report Last Analysis Summary Strip
-        report_strip = self._build_last_report_strip()
-        layout.addWidget(report_strip)
-
-        # 4. BOTTOM ROW: 4 Action Buttons
+        # 3. BOTTOM ROW: 4 Action Buttons
         action_bar = self._build_action_bar()
         layout.addWidget(action_bar)
 
@@ -470,96 +466,7 @@ class DashboardPage(QWidget):
         layout.addLayout(f_row)
         return card
 
-    def _build_last_report_strip(self) -> QWidget:
-        strip = QFrame(self)
-        strip.setObjectName("ReportStrip")
-        strip.setFixedHeight(48)
-        strip.setStyleSheet("""
-            QFrame#ReportStrip {
-                background-color: #111428;
-                border: 1px solid #1e2442;
-                border-radius: 8px;
-            }
-            QFrame#ReportStrip QLabel {
-                border: none;
-                background: transparent;
-            }
-        """)
 
-        layout = QHBoxLayout(strip)
-        layout.setContentsMargins(10, 0, 10, 0)
-        layout.setSpacing(12)
-
-        # Icon & Title
-        title_box = QHBoxLayout()
-        ic = QLabel(strip)
-        ic.setPixmap(qta.icon("fa5s.clipboard-list", color="#a855f7").pixmap(16, 16))
-
-        t_lbl = QLabel("REPORT – LAST ANALYSIS SUMMARY", strip)
-        t_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; border: none; background: transparent;")
-
-        title_box.addWidget(ic)
-        title_box.addWidget(t_lbl)
-        layout.addLayout(title_box)
-
-        # Report Fields
-        fields = [
-            ("Date & Time", "24 May 2025\n10:28 AM", "fa5s.calendar-alt"),
-            ("Sample ID", "KVK-BMT-250524", "fa5s.vial"),
-            ("Soil Type", "Medium Black", "fa5s.mountain"),
-            ("Recommendation", "Sugarcane", "fa5s.seedling"),
-            ("Status", "Completed", "fa5s.check-circle"),
-        ]
-
-        for fname, fval, ficon in fields:
-            box = QWidget(strip)
-            b_l = QHBoxLayout(box)
-            b_l.setContentsMargins(0, 0, 0, 0)
-            b_l.setSpacing(4)
-
-            b_ic = QLabel(box)
-            b_ic.setPixmap(qta.icon(ficon, color=COLOR_PRIMARY_ACCENT if fname == "Status" else "#94a3b8").pixmap(12, 12))
-
-            v_b = QVBoxLayout()
-            v_b.setSpacing(0)
-
-            fl = QLabel(fname, box)
-            fl.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; font-size: 8px; border: none; background: transparent;")
-            fv = QLabel(fval, box)
-            fv.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT if fname in ['Recommendation', 'Status'] else COLOR_TEXT_PRIMARY}; font-size: 9px; font-weight: 700; border: none; background: transparent;")
-
-            v_b.addWidget(fl)
-            v_b.addWidget(fv)
-
-            b_l.addWidget(b_ic)
-            b_l.addLayout(v_b)
-
-            layout.addWidget(box)
-
-        # Right Button
-        btn_view = QPushButton("📄 View Full Report", strip)
-        btn_view.setFixedHeight(28)
-        btn_view.setCursor(Qt.PointingHandCursor)
-        btn_view.setStyleSheet("""
-            QPushButton {
-                background-color: #3b2d6b;
-                color: #ffffff;
-                border: 1px solid #5b42a5;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 0 10px;
-            }
-            QPushButton:hover {
-                background-color: #4c3a85;
-            }
-        """)
-        btn_view.clicked.connect(lambda: self.navigate_to_page.emit(5))
-
-        layout.addStretch(1)
-        layout.addWidget(btn_view)
-
-        return strip
 
     def _build_action_bar(self) -> QWidget:
         bar = QWidget(self)
