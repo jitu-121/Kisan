@@ -209,7 +209,7 @@ class DownloadsPage(QWidget):
                 item.setParent(None)
 
         downloads_dir = get_downloads_dir()
-        pdf_pattern = os.path.join(downloads_dir, "KISAN_*.pdf")
+        pdf_pattern = os.path.join(downloads_dir, "*.pdf")
         pdf_files = sorted(glob.glob(pdf_pattern), key=os.path.getmtime, reverse=True)
 
         if not pdf_files:
@@ -396,7 +396,7 @@ class DownloadsPage(QWidget):
     def _clear_all_pdfs(self):
         """Delete all PDF files in downloads folder."""
         downloads_dir = get_downloads_dir()
-        pdf_files = glob.glob(os.path.join(downloads_dir, "KISAN_*.pdf"))
+        pdf_files = glob.glob(os.path.join(downloads_dir, "*.pdf"))
         for fp in pdf_files:
             try:
                 os.remove(fp)

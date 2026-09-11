@@ -168,8 +168,8 @@ class BrandingCard(QFrame):
         )
         icon_label.setPixmap(pixmap)
 
-        # Slogan Text
-        text_label = QLabel("Healthy Soil\nBetter Tomorrow", self)
+        # Slogan & Branding Text
+        text_label = QLabel('<span style="color: #ffffff; font-size: 13px; font-weight: 800;">Krushi </span><span style="color: #22c55e; font-size: 13px; font-weight: 800;">AI</span><br/><span style="color: #94a3b8; font-size: 9px; font-weight: 500;">Healthy Soil • Better Tomorrow</span>', self)
         text_label.setObjectName("BrandingText")
         text_label.setAlignment(Qt.AlignCenter)
 

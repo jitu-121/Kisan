@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self._init_ui()
 
     def _init_ui(self):
-        self.setWindowTitle("Project KISAN")
+        self.setWindowTitle("Krushi AI")
         self.setFixedSize(1024, 600)
         self.setStyleSheet(MAIN_WINDOW_STYLESHEET)
 

@@ -48,8 +48,8 @@ class AboutPage(QWidget):
         logo.setPixmap(qta.icon("fa5s.seedling", color=COLOR_PRIMARY_ACCENT).pixmap(36, 36))
 
         info = QVBoxLayout()
-        t = QLabel("PROJECT KISAN", hdr_card)
-        t.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-size: 16px; font-weight: 800; letter-spacing: 1px;")
+        t = QLabel('<span style="color: #ffffff;">KRUSHI </span><span style="color: #22c55e;">AI</span>', hdr_card)
+        t.setStyleSheet(f"font-size: 16px; font-weight: 800; letter-spacing: 1px;")
 
         tag = QLabel("AI Powered • Offline • For Better Farming", hdr_card)
         tag.setStyleSheet(f"color: {COLOR_PRIMARY_ACCENT}; font-size: 11px; font-weight: 700;")
@@ -72,7 +72,7 @@ class AboutPage(QWidget):
         gc_l.setSpacing(8)
 
         details = [
-            ("Application Version:", "Project KISAN v1.0.0 (Release Build)"),
+            ("Application Version:", "Krushi AI v1.0.0 (Release Build)"),
             ("ML Recommendation Model:", f"{model_info['model_name']} ({model_info['model_version']})"),
             ("Supported Crop Classes:", f"{model_info['classes_count']} Crops Dynamic Multi-Output"),
             ("Target Display Hardware:", "Waveshare 7-inch 1024x600 IPS Capacitive Touchscreen"),

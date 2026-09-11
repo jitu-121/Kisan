@@ -88,10 +88,10 @@ class TopBarWidget(QFrame):
         center_layout.setSpacing(1)
         center_layout.setAlignment(Qt.AlignCenter)
 
-        title_lbl = QLabel("SMART SOIL ANALYSIS & CROP RECOMMENDATION", center_widget)
+        title_lbl = QLabel('<span style="color: #ffffff; font-weight: 800;">KRUSHI </span><span style="color: #22c55e; font-weight: 800;">AI</span>', center_widget)
         title_lbl.setAlignment(Qt.AlignCenter)
         title_lbl.setStyleSheet(
-            f"color: {COLOR_TEXT_PRIMARY}; font-family: {FONT_FAMILY}; font-size: 13px; font-weight: 800; letter-spacing: 1px; border: none; background: transparent;"
+            f"font-family: {FONT_FAMILY}; font-size: 16px; letter-spacing: 2px; border: none; background: transparent;"
         )
 
         tagline_lbl = QLabel("🌱 AI Powered • Offline • For Better Farming 🌱", center_widget)

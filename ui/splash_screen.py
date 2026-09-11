@@ -161,12 +161,11 @@ class SplashScreen(QWidget):
         self.logo_spacer.setStyleSheet("background: transparent;")
 
         # 2. Title Label
-        self.title_label = QLabel("PROJECT KISAN", self.center_box)
+        self.title_label = QLabel('<span style="color: #ffffff;">KRUSHI </span><span style="color: #22c55e;">AI</span>', self.center_box)
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setStyleSheet(f"""
-            color: {COLOR_TEXT_PRIMARY};
             font-family: {FONT_FAMILY};
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 800;
             letter-spacing: 2px;
         """)

@@ -65,9 +65,9 @@ class LoginScreen(QWidget):
         pixmap = qta.icon("fa5s.seedling", color=COLOR_PRIMARY_ACCENT).pixmap(32, 32)
         icon_lbl.setPixmap(pixmap)
 
-        title_lbl = QLabel("Project KISAN", card)
+        title_lbl = QLabel('<span style="color: #ffffff;">Krushi </span><span style="color: #22c55e;">AI</span>', card)
         title_lbl.setAlignment(Qt.AlignCenter)
-        title_lbl.setStyleSheet(f"color: {COLOR_TEXT_PRIMARY}; font-family: {FONT_FAMILY}; font-size: {FONT_SIZE_TITLE}; font-weight: 700;")
+        title_lbl.setStyleSheet(f"font-family: {FONT_FAMILY}; font-size: {FONT_SIZE_TITLE}; font-weight: 700;")
 
         sub_lbl = QLabel("Farmer Profile Authentication", card)
         sub_lbl.setAlignment(Qt.AlignCenter)
