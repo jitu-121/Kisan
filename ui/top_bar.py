@@ -9,11 +9,13 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 import qtawesome as qta
+from utils.i18n import get_language_manager
 from utils.theme import (
     COLOR_BACKGROUND,
     COLOR_PRIMARY_ACCENT,
@@ -25,7 +27,7 @@ from utils.theme import (
 
 class TopBarWidget(QFrame):
     """
-    Top Bar Widget matching reference mockup. Height: 42px.
+    Top Bar Widget matching reference mockup with Top Right Language Selector. Height: 42px.
     """
     location_toggle_changed = pyqtSignal(bool)
     sidebar_toggle_requested = pyqtSignal()
@@ -35,8 +37,12 @@ class TopBarWidget(QFrame):
         self.setObjectName("TopBarWidget")
         self.location_enabled = True
         self.system_online = True
+        self.i18n = get_language_manager()
         self._init_ui()
         self._start_timers()
+
+        # Connect to language change signal
+        self.i18n.language_changed.connect(self._on_language_changed)
 
     def _init_ui(self):
         self.setFixedHeight(42)
@@ -55,13 +61,12 @@ class TopBarWidget(QFrame):
         layout.setContentsMargins(12, 2, 12, 2)
         layout.setSpacing(12)
 
-        # 1. LEFT: Hamburger Toggle (3 Dashes) + Logo + Signal Icon + Date & Time Stack
+        # 1. LEFT: Hamburger Toggle + Logo + Signal Icon + Date & Time Stack
         left_widget = QWidget(self)
         left_layout = QHBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
 
-        # Traditional 3-Dashes Hamburger Button
         self.toggle_btn = QPushButton(left_widget)
         self.toggle_btn.setFixedSize(30, 30)
         self.toggle_btn.setCursor(Qt.PointingHandCursor)
@@ -114,22 +119,22 @@ class TopBarWidget(QFrame):
         center_layout.setSpacing(1)
         center_layout.setAlignment(Qt.AlignCenter)
 
-        title_lbl = QLabel('<span style="color: #ffffff; font-weight: 800;">KRUSHI </span><span style="color: #22c55e; font-weight: 800;">AI</span>', center_widget)
-        title_lbl.setAlignment(Qt.AlignCenter)
-        title_lbl.setStyleSheet(
+        self.title_lbl = QLabel('<span style="color: #ffffff; font-weight: 800;">KRUSHI </span><span style="color: #22c55e; font-weight: 800;">AI</span>', center_widget)
+        self.title_lbl.setAlignment(Qt.AlignCenter)
+        self.title_lbl.setStyleSheet(
             f"font-family: {FONT_FAMILY}; font-size: 16px; letter-spacing: 2px; border: none; background: transparent;"
         )
 
-        tagline_lbl = QLabel("🌱 AI Powered • Offline • For Better Farming 🌱", center_widget)
-        tagline_lbl.setAlignment(Qt.AlignCenter)
-        tagline_lbl.setStyleSheet(
+        self.tagline_lbl = QLabel(f"🌱 {self.i18n.tr('app_tagline')} 🌱", center_widget)
+        self.tagline_lbl.setAlignment(Qt.AlignCenter)
+        self.tagline_lbl.setStyleSheet(
             f"color: {COLOR_PRIMARY_ACCENT}; font-family: {FONT_FAMILY}; font-size: 10px; font-weight: 600; border: none; background: transparent;"
         )
 
-        center_layout.addWidget(title_lbl)
-        center_layout.addWidget(tagline_lbl)
+        center_layout.addWidget(self.title_lbl)
+        center_layout.addWidget(self.tagline_lbl)
 
-        # 3. RIGHT: Wifi Icon + SYSTEM ONLINE Pill Badge
+        # 3. RIGHT: Wifi Icon + System Status Badge + TOP-RIGHT LANGUAGE SELECTOR
         right_widget = QWidget(self)
         right_layout = QHBoxLayout(right_widget)
         right_layout.setContentsMargins(0, 0, 0, 0)
@@ -153,8 +158,64 @@ class TopBarWidget(QFrame):
             }}
         """)
 
+        # TOP RIGHT CORNER LANGUAGE SELECTOR BUTTON
+        self.btn_lang = QPushButton(right_widget)
+        self.btn_lang.setFixedHeight(28)
+        self.btn_lang.setCursor(Qt.PointingHandCursor)
+        self.btn_lang.setToolTip("Select Language / भाषा चुनें")
+        self.btn_lang.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #0d1424;
+                color: {COLOR_PRIMARY_ACCENT};
+                border: 1px solid #166534;
+                border-radius: 14px;
+                padding: 3px 10px;
+                font-family: {FONT_FAMILY};
+                font-size: 11px;
+                font-weight: 800;
+            }}
+            QPushButton:hover {{
+                background-color: #131b2e;
+                border: 1px solid #22c55e;
+            }}
+        """)
+        self._update_lang_btn_text()
+
+        self.lang_menu = QMenu(self.btn_lang)
+        self.lang_menu.setStyleSheet("""
+            QMenu {
+                background-color: #0f172a;
+                color: #ffffff;
+                border: 1px solid #1e293b;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-family: Inter, Roboto, sans-serif;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            QMenu::item:selected {
+                background-color: #2E7D32;
+                color: #ffffff;
+            }
+        """)
+
+        act_en = self.lang_menu.addAction("🇬🇧 English")
+        act_hi = self.lang_menu.addAction("🇮🇳 हिंदी (Hindi)")
+        act_mr = self.lang_menu.addAction("🇮🇳 मराठी (Marathi)")
+
+        act_en.triggered.connect(lambda: self.i18n.set_language("en"))
+        act_hi.triggered.connect(lambda: self.i18n.set_language("hi"))
+        act_mr.triggered.connect(lambda: self.i18n.set_language("mr"))
+
+        self.btn_lang.setMenu(self.lang_menu)
+
         right_layout.addWidget(wifi_ic)
         right_layout.addWidget(self.status_badge)
+        right_layout.addWidget(self.btn_lang)
 
         # Assemble TopBar
         layout.addWidget(left_widget)
@@ -162,6 +223,20 @@ class TopBarWidget(QFrame):
         layout.addWidget(center_widget)
         layout.addStretch(1)
         layout.addWidget(right_widget)
+
+    def _update_lang_btn_text(self):
+        curr = self.i18n.get_language()
+        lang_display_map = {
+            "en": "🌐 EN",
+            "hi": "🌐 हि (HI)",
+            "mr": "🌐 म (MR)"
+        }
+        display_text = lang_display_map.get(curr, "🌐 EN")
+        self.btn_lang.setText(display_text)
+
+    def _on_language_changed(self, lang_code: str):
+        self._update_lang_btn_text()
+        self.tagline_lbl.setText(f"🌱 {self.i18n.tr('app_tagline')} 🌱")
 
     def _start_timers(self):
         self.clock_timer = QTimer(self)
@@ -173,11 +248,10 @@ class TopBarWidget(QFrame):
         self.time_label.setText(now.strftime("%I:%M %p"))
         self.date_label.setText(now.strftime("%d %b %Y"))
 
-        # Check sensor probe hardware status
         from services.sensor_service import SensorService
         sensor_data = SensorService.read_sensor_data()
         if sensor_data.get("is_online", False):
-            self.status_badge.setText("● SENSOR ONLINE")
+            self.status_badge.setText(f"● {self.i18n.tr('sensor_online')}")
             self.status_badge.setStyleSheet(f"""
                 QLabel {{
                     background-color: #0b2e16;
@@ -191,7 +265,7 @@ class TopBarWidget(QFrame):
                 }}
             """)
         else:
-            self.status_badge.setText("● SENSOR OFFLINE")
+            self.status_badge.setText(f"● {self.i18n.tr('sensor_offline')}")
             self.status_badge.setStyleSheet(f"""
                 QLabel {{
                     background-color: #2e0b0b;
@@ -204,4 +278,5 @@ class TopBarWidget(QFrame):
                     font-weight: 700;
                 }}
             """)
+
 

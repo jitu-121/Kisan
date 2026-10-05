@@ -12,6 +12,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from utils.i18n import get_language_manager
 
 
 def get_downloads_dir() -> str:
@@ -304,15 +305,16 @@ class PDFExporter:
         elements.append(Spacer(1, 10))
 
         # Soil Telemetry Summary
+        i18n = get_language_manager()
         elements.append(Paragraph("<b>1. Averaged Soil Telemetry Input</b>", title_style))
         telemetry_rows = [["Parameter", "Measured Value", "Target Recommendation"]]
         params_list = [
-            ("pH Level", f"{avg_data.get('ph', 6.8):.1f} pH", "Optimal range: 6.5 - 7.5"),
-            ("Nitrogen (N)", f"{avg_data.get('nitrogen', 0):.1f} kg/ha", "Baseline adjustment applied"),
-            ("Phosphorus (P)", f"{avg_data.get('phosphorus', 0):.1f} kg/ha", "Baseline adjustment applied"),
-            ("Potassium (K)", f"{avg_data.get('potassium', 0):.1f} kg/ha", "Baseline adjustment applied"),
-            ("Soil Moisture", f"{avg_data.get('moisture', 0):.1f} %", "Field moisture status"),
-            ("Temperature", f"{avg_data.get('temperature', 0):.1f} °C", "Ambient soil temp"),
+            (i18n.tr("ph_level"), f"{avg_data.get('ph', 6.8):.1f} pH", "Optimal range: 6.5 - 7.5"),
+            (i18n.tr("nitrogen"), f"{avg_data.get('nitrogen', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            (i18n.tr("phosphorus"), f"{avg_data.get('phosphorus', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            (i18n.tr("potassium"), f"{avg_data.get('potassium', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            (i18n.tr("moisture"), f"{avg_data.get('moisture', 0):.1f} %", "Field moisture status"),
+            (i18n.tr("temperature"), f"{avg_data.get('temperature', 0):.1f} °C", "Ambient soil temp"),
         ]
         for p_k, p_v, p_t in params_list:
             telemetry_rows.append([p_k, p_v, p_t])
@@ -364,12 +366,12 @@ class PDFExporter:
             cb = top_rec.get("cost_breakdown", {})
             cb_rows = [
                 ["Cost Component", "Cost per Acre (Rs.)", "Percentage of Total Cost"],
-                ["Seeds & Planting Material", f"Rs. {cb.get('seeds', 0):,.2f}", f"{(cb.get('seeds', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
-                ["Labor & Field Operations", f"Rs. {cb.get('labor', 0):,.2f}", f"{(cb.get('labor', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
-                ["Irrigation & Power", f"Rs. {cb.get('irrigation', 0):,.2f}", f"{(cb.get('irrigation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
-                ["Pesticides & Crop Protection", f"Rs. {cb.get('pesticides', 0):,.2f}", f"{(cb.get('pesticides', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
-                ["Soil NPK Remediation", f"Rs. {cb.get('remediation', 0):,.2f}", f"{(cb.get('remediation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
-                ["TOTAL CULTIVATION COST", f"Rs. {top_rec['c_total_per_acre']:,.2f}", "100.0%"]
+                [i18n.tr("seeds_cost"), f"Rs. {cb.get('seeds', 0):,.2f}", f"{(cb.get('seeds', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                [i18n.tr("labor_cost"), f"Rs. {cb.get('labor', 0):,.2f}", f"{(cb.get('labor', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                [i18n.tr("irrigation_cost"), f"Rs. {cb.get('irrigation', 0):,.2f}", f"{(cb.get('irrigation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                [i18n.tr("pesticides_cost"), f"Rs. {cb.get('pesticides', 0):,.2f}", f"{(cb.get('pesticides', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                [i18n.tr("remediation_cost"), f"Rs. {cb.get('remediation', 0):,.2f}", f"{(cb.get('remediation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                [i18n.tr("total_cultivation_cost"), f"Rs. {top_rec['c_total_per_acre']:,.2f}", "100.0%"]
             ]
             cb_table = Table(cb_rows, colWidths=[240, 160, 140])
             cb_table.setStyle(TableStyle([

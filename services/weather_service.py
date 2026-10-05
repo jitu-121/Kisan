@@ -299,28 +299,36 @@ class WeatherService:
         }
 
     @staticmethod
-    def _generate_ai_field_advisory(forecast: list, current_temp: float, max_rain: int, leaching_risk: int, spray_status: str, et0_val: float) -> str:
-        """Dynamic Farm Decision Rule Engine generating actionable advisory."""
+    def _generate_ai_field_advisory(forecast: list, current_temp: float, max_rain: int, leaching_risk: int, spray_status: str, et0_val: float) -> dict:
+        """Dynamic Farm Decision Rule Engine generating actionable advisory metadata."""
         if max_rain >= 70:
-            return (
-                f"Heavy rainfall cluster detected (Next 3 Days Max Rain >{max_rain}%). "
-                f"High risk of nutrient runoff and root leaching. Postpone all Nitrogen/Urea soil application until dry spell."
-            )
+            return {
+                "key": "adv_heavy_rain",
+                "params": {"max_rain": max_rain},
+                "is_warn": True,
+                "text": f"Heavy rainfall cluster detected (Next 3 Days Max Rain >{max_rain}%). High risk of nutrient runoff and root leaching. Postpone all Nitrogen/Urea soil application until dry spell."
+            }
         elif current_temp > 35 or et0_val >= 5.0:
-            return (
-                f"High heat & elevated Evapotranspiration ({et0_val} mm/day) detected. "
-                f"Schedule extra evening drip irrigation cycles to prevent crop moisture stress and soil drying."
-            )
+            return {
+                "key": "adv_high_heat",
+                "params": {"et0_val": et0_val},
+                "is_warn": True,
+                "text": f"High heat & elevated Evapotranspiration ({et0_val} mm/day) detected. Schedule extra evening drip irrigation cycles to prevent crop moisture stress and soil drying."
+            }
         elif spray_status == "UNFAVORABLE":
-            return (
-                f"Unfavorable crop spray window due to elevated wind velocity / rain risk. "
-                f"Delay chemical pesticide and fungicide spraying to prevent drift and wash-off loss."
-            )
+            return {
+                "key": "adv_unfavorable_spray",
+                "params": {},
+                "is_warn": True,
+                "text": f"Unfavorable crop spray window due to elevated wind velocity / rain risk. Delay chemical pesticide and fungicide spraying to prevent drift and wash-off loss."
+            }
         else:
-            return (
-                f"Favorable agronomic weather window. Ideal conditions for balanced fertigation, "
-                f"routine crop inspection, and foliar spray operations."
-            )
+            return {
+                "key": "adv_favorable",
+                "params": {},
+                "is_warn": False,
+                "text": f"Favorable agronomic weather window. Ideal conditions for balanced fertigation, routine crop inspection, and foliar spray operations."
+            }
 
     @staticmethod
     def _map_wmo_code(code: int) -> tuple:

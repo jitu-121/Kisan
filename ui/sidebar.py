@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 import qtawesome as qta
+from utils.i18n import get_language_manager
 from utils.theme import (
     BRANDING_CARD_STYLESHEET,
     COLOR_PRIMARY_ACCENT,
@@ -178,19 +179,19 @@ class BrandingCard(QFrame):
 
 
 class SidebarWidget(QWidget):
-    """Sidebar navigation widget container."""
+    """Sidebar navigation widget container with dynamic i18n support."""
     item_selected = pyqtSignal(int)
 
-    NAV_ITEMS = [
-        ("Dashboard", "fa5s.th-large"),
-        ("Soil Test", "fa5s.vial"),
-        ("Crop Recommendation", "fa5s.seedling"),
-        ("Fertilizer Recommendation", "fa5s.prescription-bottle-alt"),
-        ("Weather Report", "fa5s.cloud-sun"),
-        ("Report", "fa5s.file-alt"),
-        ("Downloads", "fa5s.download"),
-        ("Settings", "fa5s.cog"),
-        ("About System", "fa5s.info-circle"),
+    NAV_ITEMS_KEYS = [
+        ("nav_dashboard", "Dashboard", "fa5s.th-large"),
+        ("nav_soil_test", "Soil Test", "fa5s.vial"),
+        ("nav_crop_rec", "Crop Recommendation", "fa5s.seedling"),
+        ("nav_fertilizer_rec", "Fertilizer Recommendation", "fa5s.prescription-bottle-alt"),
+        ("nav_weather", "Weather Report", "fa5s.cloud-sun"),
+        ("nav_report", "Report", "fa5s.file-alt"),
+        ("nav_downloads", "Downloads", "fa5s.download"),
+        ("nav_settings", "Settings", "fa5s.cog"),
+        ("nav_about", "About System", "fa5s.info-circle"),
     ]
 
     def __init__(self, parent=None):
@@ -198,7 +199,11 @@ class SidebarWidget(QWidget):
         self.setObjectName("SidebarWidget")
         self.nav_buttons = []
         self.current_active_index = 0
+        self.i18n = get_language_manager()
         self._init_ui()
+
+        # Connect language change signal
+        self.i18n.language_changed.connect(self._on_language_changed)
 
     def _init_ui(self):
         self.setFixedWidth(SIDEBAR_WIDTH)
@@ -209,8 +214,9 @@ class SidebarWidget(QWidget):
         main_layout.setSpacing(2)
 
         # Create Navigation Items
-        for idx, (name, icon_name) in enumerate(self.NAV_ITEMS):
-            nav_item = NavItemWidget(idx, name, icon_name, self)
+        for idx, (key, default_name, icon_name) in enumerate(self.NAV_ITEMS_KEYS):
+            translated_name = self.i18n.tr(key, default_name)
+            nav_item = NavItemWidget(idx, translated_name, icon_name, self)
             nav_item.clicked.connect(self._on_item_clicked)
             main_layout.addWidget(nav_item)
             self.nav_buttons.append(nav_item)
@@ -225,6 +231,11 @@ class SidebarWidget(QWidget):
         # Set default active item (Dashboard)
         self.set_active_index(0)
 
+    def _on_language_changed(self, lang_code: str):
+        for idx, (key, default_name, icon_name) in enumerate(self.NAV_ITEMS_KEYS):
+            translated_name = self.i18n.tr(key, default_name)
+            self.nav_buttons[idx].text_label.setText(translated_name)
+
     def _on_item_clicked(self, index: int):
         if index != self.current_active_index:
             self.set_active_index(index)
@@ -234,3 +245,4 @@ class SidebarWidget(QWidget):
         self.current_active_index = index
         for btn in self.nav_buttons:
             btn.set_active(btn.index == index)
+

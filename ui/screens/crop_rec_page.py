@@ -1,9 +1,7 @@
 """
 Crop Recommendation Page View for Project KISAN.
 Implements a 3-State Spatial Sampling Wizard with Stage 1 ML + Stage 2 MCDA Economic Engine.
-State 1: Vertical list of 5 reading slots with touch targets.
-State 2: The Processing Phase (UX Fake loading with QTimer).
-State 3: Result Phase featuring Dual-View Tabs (Agronomic Suitability vs. Prescriptive Financial View).
+Full Native Multi-Language i18n Support (English, Hindi, Marathi).
 """
 
 import json
@@ -30,6 +28,7 @@ from services.economic_service import EconomicService
 from services.recommendation_service import RecommendationService
 from services.sensor_service import SensorService
 from utils.auth import AuthManager
+from utils.i18n import get_language_manager
 from utils.theme import (
     COLOR_BACKGROUND,
     COLOR_PRIMARY_ACCENT,
@@ -49,15 +48,16 @@ class CostBreakdownDialog(QDialog):
     def __init__(self, crop_data: dict, parent=None):
         super().__init__(parent)
         self.crop_data = crop_data
-        self.setWindowTitle(f"Cost Breakdown - {crop_data['crop'].upper()}")
-        self.setFixedSize(440, 380)
+        self.i18n = get_language_manager()
+        self.setWindowTitle(f"{self.i18n.tr('cost_breakdown_title')} - {crop_data['crop'].upper()}")
+        self.setFixedSize(450, 390)
         self.setStyleSheet(f"background-color: #0f172a; color: #ffffff; font-family: {FONT_FAMILY};")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        title = QLabel(f"Cost Breakdown: {crop_data['crop'].upper()}", self)
+        title = QLabel(f"{self.i18n.tr('cost_breakdown_title')}: {crop_data['crop'].upper()}", self)
         title.setStyleSheet("font-size: 16px; font-weight: 800; color: #4ADE80;")
         layout.addWidget(title)
 
@@ -67,11 +67,11 @@ class CostBreakdownDialog(QDialog):
         grid.setSpacing(10)
 
         items = [
-            ("Seeds & Planting Material:", f"Rs. {breakdown.get('seeds', 0):,.2f}"),
-            ("Labor & Field Operations:", f"Rs. {breakdown.get('labor', 0):,.2f}"),
-            ("Irrigation & Power:", f"Rs. {breakdown.get('irrigation', 0):,.2f}"),
-            ("Pesticides & Crop Protection:", f"Rs. {breakdown.get('pesticides', 0):,.2f}"),
-            ("Soil NPK Remediation:", f"Rs. {breakdown.get('remediation', 0):,.2f}"),
+            (self.i18n.tr("seeds_cost"), f"Rs. {breakdown.get('seeds', 0):,.2f}"),
+            (self.i18n.tr("labor_cost"), f"Rs. {breakdown.get('labor', 0):,.2f}"),
+            (self.i18n.tr("irrigation_cost"), f"Rs. {breakdown.get('irrigation', 0):,.2f}"),
+            (self.i18n.tr("pesticides_cost"), f"Rs. {breakdown.get('pesticides', 0):,.2f}"),
+            (self.i18n.tr("remediation_cost"), f"Rs. {breakdown.get('remediation', 0):,.2f}"),
         ]
 
         for idx, (label_text, val_text) in enumerate(items):
@@ -91,16 +91,16 @@ class CostBreakdownDialog(QDialog):
         layout.addWidget(line)
 
         total_layout = QHBoxLayout()
-        lbl_tot_k = QLabel("Total Cultivation Cost / Acre:", self)
-        lbl_tot_k.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: 800;")
+        lbl_tot_k = QLabel(self.i18n.tr("total_cultivation_cost"), self)
+        lbl_tot_k.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: 800;")
         lbl_tot_v = QLabel(f"Rs. {crop_data.get('c_total_per_acre', 0):,.2f}", self)
-        lbl_tot_v.setStyleSheet("color: #f59e0b; font-size: 16px; font-weight: 800;")
+        lbl_tot_v.setStyleSheet("color: #f59e0b; font-size: 15px; font-weight: 800;")
         lbl_tot_v.setAlignment(Qt.AlignRight)
         total_layout.addWidget(lbl_tot_k)
         total_layout.addWidget(lbl_tot_v)
         layout.addLayout(total_layout)
 
-        btn_close = QPushButton("Close", self)
+        btn_close = QPushButton(self.i18n.tr("close"), self)
         btn_close.setFixedHeight(40)
         btn_close.setCursor(Qt.PointingHandCursor)
         btn_close.setStyleSheet(f"""
@@ -124,6 +124,7 @@ class CostBreakdownDialog(QDialog):
 class CropRecPage(QWidget):
     """
     3-State Wizard Crop Recommendation Page with Dual-View Stage 1 ML & Stage 2 MCDA Economic Engine.
+    Fully localized in English, Hindi, and Marathi.
     """
 
     navigate_to_page = pyqtSignal(int)
@@ -133,7 +134,11 @@ class CropRecPage(QWidget):
         self.samples = [None] * 5
         self.economic_service = EconomicService()
         self.current_economic_results = []
+        self.i18n = get_language_manager()
         self._init_ui()
+
+        # Connect language change signal
+        self.i18n.language_changed.connect(self._on_language_changed)
 
     def _init_ui(self):
         self.setStyleSheet(f"background-color: {COLOR_BACKGROUND};")
@@ -161,7 +166,7 @@ class CropRecPage(QWidget):
         layout.setSpacing(0)
         layout.setAlignment(Qt.AlignTop)
 
-        self.lbl_s1_header = QLabel("Field Sampling in Progress", self.view_state_1)
+        self.lbl_s1_header = QLabel(self.i18n.tr("field_sampling_in_progress"), self.view_state_1)
         self.lbl_s1_header.setStyleSheet(
             f"color: {COLOR_TEXT_PRIMARY}; font-family: {FONT_FAMILY}; font-size: 20px; font-weight: 800;"
         )
@@ -171,6 +176,7 @@ class CropRecPage(QWidget):
 
         self.btn_captures = []
         self.lbl_telemetry = []
+        self.lbl_spot_names = []
 
         for i in range(5):
             row_frame = QFrame(self.view_state_1)
@@ -187,14 +193,15 @@ class CropRecPage(QWidget):
             row_layout.setContentsMargins(14, 0, 14, 0)
             row_layout.setSpacing(12)
 
-            lbl_name = QLabel(f"Reading Spot {i+1}:", row_frame)
-            lbl_name.setFixedWidth(130)
+            lbl_name = QLabel(f"{self.i18n.tr('reading_spot')} {i+1}:", row_frame)
+            lbl_name.setFixedWidth(140)
             lbl_name.setStyleSheet(
-                f"color: {COLOR_PRIMARY_ACCENT}; font-family: {FONT_FAMILY}; font-size: 14px; font-weight: 800;"
+                f"color: {COLOR_PRIMARY_ACCENT}; font-family: {FONT_FAMILY}; font-size: 13px; font-weight: 800;"
             )
+            self.lbl_spot_names.append(lbl_name)
 
-            btn_cap = QPushButton("Capture", row_frame)
-            btn_cap.setFixedSize(85, 30)
+            btn_cap = QPushButton(self.i18n.tr("capture"), row_frame)
+            btn_cap.setFixedSize(95, 30)
             btn_cap.setCursor(Qt.PointingHandCursor)
             btn_cap.setStyleSheet(f"""
                 QPushButton {{
@@ -203,7 +210,7 @@ class CropRecPage(QWidget):
                     border: none;
                     border-radius: 4px;
                     font-family: {FONT_FAMILY};
-                    font-size: 13px;
+                    font-size: 12px;
                     font-weight: 800;
                 }}
                 QPushButton:disabled {{
@@ -234,9 +241,9 @@ class CropRecPage(QWidget):
 
         layout.addSpacing(22)
 
-        self.btn_predict = QPushButton("Predict Crop & Analyze Economy", self.view_state_1)
+        self.btn_predict = QPushButton(self.i18n.tr("predict_crop_analyze_economy"), self.view_state_1)
         self.btn_predict.setFixedHeight(50)
-        self.btn_predict.setFixedWidth(300)
+        self.btn_predict.setFixedWidth(340)
         self.btn_predict.setCursor(Qt.PointingHandCursor)
         self.btn_predict.setStyleSheet(f"""
             QPushButton {{
@@ -287,7 +294,7 @@ class CropRecPage(QWidget):
         self.lbl_telemetry[idx].setStyleSheet(
             f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700;"
         )
-        self.btn_captures[idx].setText("Re-Capture")
+        self.btn_captures[idx].setText(self.i18n.tr("recapture"))
 
         if idx + 1 < 5:
             self.btn_captures[idx + 1].setEnabled(True)
@@ -317,17 +324,16 @@ class CropRecPage(QWidget):
     def _transition_to_processing(self):
         self.stack.setCurrentIndex(1)
         self.averaged_vector = np.mean(self.samples, axis=0)
-        self.lbl_s2_status.setText("Averaging 5 spatial soil samples...")
+        self.lbl_s2_status.setText(self.i18n.tr("field_sampling_in_progress"))
         QTimer.singleShot(600, self._step2_loading_model)
 
     def _step2_loading_model(self):
-        self.lbl_s2_status.setText("Executing Stage 1 ML & Stage 2 Economic Engine...")
+        self.lbl_s2_status.setText(self.i18n.tr("predict_crop_analyze_economy"))
         QTimer.singleShot(800, self._step2_run_inference)
 
     def _step2_run_inference(self):
         avg_n, avg_p, avg_k, avg_ph, avg_m, avg_t = self.averaged_vector
 
-        # 1. Stage 1 ML Predictions
         top_10 = RecommendationService.predict_crops(
             ph=round(avg_ph, 1),
             n=round(avg_n, 1),
@@ -339,7 +345,7 @@ class CropRecPage(QWidget):
 
         best_crop = top_10[0]
         self.lbl_s3_prediction.setText(best_crop["crop"].upper())
-        self.lbl_s3_confidence.setText(f"Confidence Score  {best_crop['confidence']:.1f} %")
+        self.lbl_s3_confidence.setText(f"{self.i18n.tr('confidence_score')}  {best_crop['confidence']:.1f} %")
         self.lbl_best_icon.setPixmap(qta.icon(best_crop["icon"], color=EMERALD_LIGHT).pixmap(32, 32))
 
         for idx in range(3):
@@ -351,7 +357,6 @@ class CropRecPage(QWidget):
                     qta.icon(crop_data["icon"], color=EMERALD_LIGHT).pixmap(20, 20)
                 )
 
-        # 2. Stage 2 Analytical Economic Engine
         self.current_economic_results = self.economic_service.calculate_economic_ranking(
             soil_n=round(avg_n, 1),
             soil_p=round(avg_p, 1),
@@ -362,7 +367,6 @@ class CropRecPage(QWidget):
 
         self._populate_financial_tab(self.current_economic_results)
 
-        # Update telemetry grid
         self.lbl_grid_vals["N"].setText(str(int(avg_n)))
         self.lbl_grid_vals["P"].setText(str(int(avg_p)))
         self.lbl_grid_vals["K"].setText(str(int(avg_k)))
@@ -370,10 +374,8 @@ class CropRecPage(QWidget):
         self.lbl_grid_vals["Moisture"].setText(f"{int(avg_m)}%")
         self.lbl_grid_vals["Temp"].setText(f"{int(avg_t)}°C")
 
-        # Save session to DB if farmer authenticated
         farmer = AuthManager.get_current_farmer()
         if farmer:
-            # Stage 1 ML Session
             sess_ml = CropRecommendationSession(
                 farmer_id=farmer.id,
                 land_size_acres=1.0,
@@ -389,7 +391,6 @@ class CropRecPage(QWidget):
             )
             db_session.add(sess_ml)
 
-            # Stage 2 Economic Session
             if self.current_economic_results:
                 best_econ = self.current_economic_results[0]
                 sess_econ = EconomicRecommendationSession(
@@ -422,7 +423,6 @@ class CropRecPage(QWidget):
         layout.setSpacing(6)
         layout.setAlignment(Qt.AlignTop)
 
-        # Main Tab Widget
         self.tab_widget = QTabWidget(self.view_state_3)
         self.tab_widget.setStyleSheet(f"""
             QTabWidget::pane {{
@@ -452,16 +452,14 @@ class CropRecPage(QWidget):
             }}
         """)
 
-        # Build Tab 1 & Tab 2
         self._build_tab_1_agronomic()
         self._build_tab_2_financial()
 
-        self.tab_widget.addTab(self.tab_1_widget, "🌱 Biological Suitability (Stage 1 ML)")
-        self.tab_widget.addTab(self.tab_2_widget, "📈 Prescriptive Financial View (Stage 2 MCDA)")
+        self.tab_widget.addTab(self.tab_1_widget, self.i18n.tr("biological_suitability_tab"))
+        self.tab_widget.addTab(self.tab_2_widget, self.i18n.tr("prescriptive_financial_tab"))
 
         layout.addWidget(self.tab_widget, 1)
 
-        # Telemetry Grid at Bottom
         grid_frame = QFrame(self.view_state_3)
         grid_frame.setStyleSheet("background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px;")
         grid_frame.setFixedHeight(54)
@@ -470,17 +468,18 @@ class CropRecPage(QWidget):
         grid_layout.setContentsMargins(6, 2, 6, 2)
         grid_layout.setSpacing(6)
 
-        parameters = [
-            ("N", "Nitrogen"),
-            ("P", "Phosphorus"),
-            ("K", "Potassium"),
-            ("pH", "pH Level"),
-            ("Moisture", "Moisture"),
-            ("Temp", "Temperature"),
+        self.param_keys = [
+            ("N", "nitrogen"),
+            ("P", "phosphorus"),
+            ("K", "potassium"),
+            ("pH", "ph_level"),
+            ("Moisture", "moisture"),
+            ("Temp", "temperature"),
         ]
 
         self.lbl_grid_vals = {}
-        for key, name in parameters:
+        self.lbl_grid_names = {}
+        for key, i18n_k in self.param_keys:
             cell = QFrame(grid_frame)
             cell.setStyleSheet("background-color: #1e293b; border-radius: 4px;")
             cell_layout = QVBoxLayout(cell)
@@ -494,7 +493,7 @@ class CropRecPage(QWidget):
                 f"color: #ffffff; font-family: {FONT_FAMILY}; font-size: 14px; font-weight: 800;"
             )
 
-            name_lbl = QLabel(name, cell)
+            name_lbl = QLabel(self.i18n.tr(i18n_k), cell)
             name_lbl.setAlignment(Qt.AlignCenter)
             name_lbl.setStyleSheet(
                 f"color: #94a3b8; font-family: {FONT_FAMILY}; font-size: 8px; font-weight: 600;"
@@ -503,18 +502,19 @@ class CropRecPage(QWidget):
             cell_layout.addWidget(val_lbl)
             cell_layout.addWidget(name_lbl)
             grid_layout.addWidget(cell)
+
             self.lbl_grid_vals[key] = val_lbl
+            self.lbl_grid_names[key] = name_lbl
 
         layout.addWidget(grid_frame)
 
-        # Action Buttons Layout
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(16)
         btn_layout.setAlignment(Qt.AlignCenter)
 
-        self.btn_fertilizer = QPushButton("Calculate Fertilizer Deficit", self.view_state_3)
+        self.btn_fertilizer = QPushButton(self.i18n.tr("calculate_fertilizer_deficit"), self.view_state_3)
         self.btn_fertilizer.setFixedHeight(44)
-        self.btn_fertilizer.setFixedWidth(240)
+        self.btn_fertilizer.setFixedWidth(260)
         self.btn_fertilizer.setCursor(Qt.PointingHandCursor)
         self.btn_fertilizer.setStyleSheet(f"""
             QPushButton {{
@@ -533,9 +533,9 @@ class CropRecPage(QWidget):
         self.btn_fertilizer.clicked.connect(self._calculate_fertilizer)
         btn_layout.addWidget(self.btn_fertilizer)
 
-        self.btn_new_scan = QPushButton("Start New Scan", self.view_state_3)
+        self.btn_new_scan = QPushButton(self.i18n.tr("start_new_scan"), self.view_state_3)
         self.btn_new_scan.setFixedHeight(44)
-        self.btn_new_scan.setFixedWidth(160)
+        self.btn_new_scan.setFixedWidth(180)
         self.btn_new_scan.setCursor(Qt.PointingHandCursor)
         self.btn_new_scan.setStyleSheet(f"""
             QPushButton {{
@@ -573,7 +573,6 @@ class CropRecPage(QWidget):
         center_layout.setContentsMargins(0, 0, 0, 0)
         center_layout.setSpacing(12)
 
-        # Best Match Card
         best_match_frame = QFrame(center_widget)
         best_match_frame.setObjectName("BestMatchFrame")
         best_match_frame.setStyleSheet("QFrame#BestMatchFrame { background: transparent; border: none; }")
@@ -599,8 +598,8 @@ class CropRecPage(QWidget):
         details_layout.setSpacing(3)
         details_layout.setAlignment(Qt.AlignVCenter)
 
-        lbl_bm_title = QLabel("Best Biological Match", best_match_frame)
-        lbl_bm_title.setStyleSheet(
+        self.lbl_bm_title = QLabel(self.i18n.tr("best_biological_match"), best_match_frame)
+        self.lbl_bm_title.setStyleSheet(
             f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700;"
         )
 
@@ -612,7 +611,7 @@ class CropRecPage(QWidget):
         self.pill_frame = QFrame(best_match_frame)
         self.pill_frame.setObjectName("PillFrame")
         self.pill_frame.setFixedHeight(24)
-        self.pill_frame.setFixedWidth(210)
+        self.pill_frame.setFixedWidth(230)
         self.pill_frame.setStyleSheet("""
             QFrame#PillFrame {
                 border: 1px solid #16a34a;
@@ -622,25 +621,24 @@ class CropRecPage(QWidget):
         """)
         pill_layout = QHBoxLayout(self.pill_frame)
         pill_layout.setContentsMargins(12, 0, 12, 0)
-        self.lbl_s3_confidence = QLabel("Confidence Score  92.4 %", self.pill_frame)
+        self.lbl_s3_confidence = QLabel(f"{self.i18n.tr('confidence_score')}  92.4 %", self.pill_frame)
         self.lbl_s3_confidence.setStyleSheet(
             f"color: {EMERALD_LIGHT}; font-family: {FONT_FAMILY}; font-size: 11px; font-weight: 700;"
         )
         pill_layout.addWidget(self.lbl_s3_confidence, 0, Qt.AlignCenter)
 
-        details_layout.addWidget(lbl_bm_title)
+        details_layout.addWidget(self.lbl_bm_title)
         details_layout.addWidget(self.lbl_s3_prediction)
         details_layout.addWidget(self.pill_frame)
 
         bm_layout.addLayout(details_layout, 1)
         center_layout.addWidget(best_match_frame)
 
-        # Runner-up cards
-        lbl_runners_header = QLabel("Other Suitable Crops", center_widget)
-        lbl_runners_header.setStyleSheet(
+        self.lbl_runners_header = QLabel(self.i18n.tr("other_suitable_crops"), center_widget)
+        self.lbl_runners_header.setStyleSheet(
             f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 700;"
         )
-        center_layout.addWidget(lbl_runners_header)
+        center_layout.addWidget(self.lbl_runners_header)
 
         runners_widget = QWidget(center_widget)
         self.runners_layout = QHBoxLayout(runners_widget)
@@ -719,8 +717,7 @@ class CropRecPage(QWidget):
         layout.addWidget(scroll_area)
 
     def _populate_financial_tab(self, economic_results: list):
-        """Dynamically populate Tab 2 with economic cards."""
-        # Clear existing cards
+        """Dynamically populate Tab 2 with localized economic cards."""
         while self.cards_layout.count():
             item = self.cards_layout.takeAt(0)
             widget = item.widget()
@@ -734,7 +731,7 @@ class CropRecPage(QWidget):
             self.cards_layout.addWidget(lbl_empty)
             return
 
-        for idx, econ in enumerate(economic_results[:5]):  # Display top 5 economic choices
+        for idx, econ in enumerate(economic_results[:5]):
             card = QFrame(self.cards_container)
             card.setStyleSheet("""
                 QFrame {
@@ -750,7 +747,6 @@ class CropRecPage(QWidget):
             card_layout.setContentsMargins(14, 12, 14, 12)
             card_layout.setSpacing(8)
 
-            # Top Row: Rank #, Crop Name, Score Badge, MSP Badge
             top_row = QHBoxLayout()
             top_row.setSpacing(10)
 
@@ -772,7 +768,7 @@ class CropRecPage(QWidget):
             top_row.addWidget(lbl_score)
 
             if econ.get("msp_backed", 0):
-                lbl_msp = QLabel("✓ MSP Protected", card)
+                lbl_msp = QLabel(self.i18n.tr("msp_protected"), card)
                 lbl_msp.setStyleSheet(
                     "background-color: #064e3b; color: #34d399; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 4px;"
                 )
@@ -781,15 +777,14 @@ class CropRecPage(QWidget):
             top_row.addStretch()
             card_layout.addLayout(top_row)
 
-            # Metrics Row (4 Columns)
             metrics_grid = QGridLayout()
             metrics_grid.setSpacing(8)
 
             metrics = [
-                ("Expected Net Profit", f"Rs. {econ['net_profit_per_acre']:,.2f} / acre", "#4ADE80"),
-                ("Return on Investment (ROI)", f"{econ['roi_percent']:.1f} %", "#f59e0b"),
-                ("Est. Harvest Price", f"Rs. {econ['p_effective']:,.2f} / Qtl", "#e2e8f0"),
-                ("Expected Yield", f"{econ['y_expected_per_acre']:.1f} Qtl / acre", "#e2e8f0"),
+                (self.i18n.tr("expected_net_profit"), f"Rs. {econ['net_profit_per_acre']:,.2f} / acre", "#4ADE80"),
+                (self.i18n.tr("return_on_investment"), f"{econ['roi_percent']:.1f} %", "#f59e0b"),
+                (self.i18n.tr("est_harvest_price"), f"Rs. {econ['p_effective']:,.2f} / Qtl", "#e2e8f0"),
+                (self.i18n.tr("expected_yield"), f"{econ['y_expected_per_acre']:.1f} Qtl / acre", "#e2e8f0"),
             ]
 
             for m_idx, (m_title, m_val, color_hex) in enumerate(metrics):
@@ -802,13 +797,12 @@ class CropRecPage(QWidget):
 
             card_layout.addLayout(metrics_grid)
 
-            # Bottom Row: Cost Breakdown Button
             bot_row = QHBoxLayout()
             bot_row.addStretch()
 
-            btn_breakdown = QPushButton("View Cost Breakdown", card)
+            btn_breakdown = QPushButton(self.i18n.tr("view_cost_breakdown"), card)
             btn_breakdown.setFixedHeight(30)
-            btn_breakdown.setFixedWidth(160)
+            btn_breakdown.setFixedWidth(180)
             btn_breakdown.setCursor(Qt.PointingHandCursor)
             btn_breakdown.setStyleSheet("""
                 QPushButton {
@@ -836,6 +830,32 @@ class CropRecPage(QWidget):
         dialog = CostBreakdownDialog(crop_data, self)
         dialog.exec_()
 
+    def _on_language_changed(self, lang_code: str):
+        """Dynamic signal handler when farmer switches language."""
+        self.lbl_s1_header.setText(self.i18n.tr("field_sampling_in_progress"))
+        for i in range(5):
+            self.lbl_spot_names[i].setText(f"{self.i18n.tr('reading_spot')} {i+1}:")
+            if self.samples[i] is not None:
+                self.btn_captures[i].setText(self.i18n.tr("recapture"))
+            else:
+                self.btn_captures[i].setText(self.i18n.tr("capture"))
+
+        self.btn_predict.setText(self.i18n.tr("predict_crop_analyze_economy"))
+        self.tab_widget.setTabText(0, self.i18n.tr("biological_suitability_tab"))
+        self.tab_widget.setTabText(1, self.i18n.tr("prescriptive_financial_tab"))
+
+        self.lbl_bm_title.setText(self.i18n.tr("best_biological_match"))
+        self.lbl_runners_header.setText(self.i18n.tr("other_suitable_crops"))
+        self.btn_fertilizer.setText(self.i18n.tr("calculate_fertilizer_deficit"))
+        self.btn_new_scan.setText(self.i18n.tr("start_new_scan"))
+
+        for key, i18n_k in self.param_keys:
+            if key in self.lbl_grid_names:
+                self.lbl_grid_names[key].setText(self.i18n.tr(i18n_k))
+
+        if self.current_economic_results:
+            self._populate_financial_tab(self.current_economic_results)
+
     def _calculate_fertilizer(self):
         print("[Crop Recommendation] Calculate Fertilizer Deficit Action Triggered!")
         self.navigate_to_page.emit(3)
@@ -852,7 +872,7 @@ class CropRecPage(QWidget):
             self.lbl_telemetry[i].setStyleSheet(
                 f"color: {COLOR_TEXT_MUTED}; font-family: {FONT_FAMILY}; font-size: 12px; font-weight: 600;"
             )
-            self.btn_captures[i].setText("Capture")
+            self.btn_captures[i].setText(self.i18n.tr("capture"))
             self.btn_captures[i].setEnabled(i == 0)
 
         self.btn_predict.setEnabled(False)
