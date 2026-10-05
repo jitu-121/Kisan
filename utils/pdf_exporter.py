@@ -227,6 +227,166 @@ class PDFExporter:
         return filepath
 
     @staticmethod
+    def export_economic_prescriptive_report(
+        acres: float,
+        avg_data: dict,
+        top_crops_ml: list,
+        economic_rankings: list,
+        farmer_name: str = "Farmer"
+    ) -> str:
+        """
+        Generate comprehensive Stage 1 ML + Stage 2 Prescriptive Economic Analysis PDF report.
+        Saves strictly to the project downloads/ directory.
+        """
+        filename = f"Krushi_AI_Economic_Prescriptive_Report_{acres}Acre_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filepath = os.path.join(get_downloads_dir(), filename)
+
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=letter,
+            leftMargin=36,
+            rightMargin=36,
+            topMargin=70,
+            bottomMargin=60,
+        )
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            "DocTitle",
+            parent=styles["Heading1"],
+            fontSize=16,
+            textColor=HexColor("#166534"),
+            spaceAfter=6,
+        )
+        subtitle_style = ParagraphStyle(
+            "DocSubTitle",
+            parent=styles["Normal"],
+            fontSize=10,
+            textColor=HexColor("#4b5563"),
+            spaceAfter=10,
+        )
+        body_style = ParagraphStyle(
+            "DocBody",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=HexColor("#1f2937"),
+            leading=13,
+        )
+        body_bold = ParagraphStyle(
+            "DocBodyBold",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=HexColor("#166534"),
+            fontName="Helvetica-Bold",
+            leading=13,
+        )
+
+        elements = []
+        elements.append(Paragraph("Prescriptive Economic & Agronomic Decision Report", title_style))
+        elements.append(Paragraph(f"Field Area: <b>{acres} Acre(s)</b> • Dual-Stage Decision Framework Output", subtitle_style))
+        elements.append(HRFlowable(width="100%", thickness=1, color=HexColor("#22c55e"), spaceAfter=12))
+
+        # Metadata Section
+        meta_data = [
+            [Paragraph("<b>Farmer / Field Owner:</b>", body_style), Paragraph(farmer_name, body_style)],
+            [Paragraph("<b>Date & Time:</b>", body_style), Paragraph(datetime.now().strftime("%d %b %Y, %I:%M %p"), body_style)],
+            [Paragraph("<b>Land Size:</b>", body_style), Paragraph(f"{acres} Acre(s)", body_style)],
+            [Paragraph("<b>Framework Architecture:</b>", body_style), Paragraph("Stage 1 ML Biological Inference + Stage 2 Non-Trainable Economic MCDA Engine", body_style)],
+        ]
+        meta_table = Table(meta_data, colWidths=[140, 400])
+        meta_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), HexColor("#f0fdf4")),
+            ('PADDING', (0, 0), (-1, -1), 5),
+            ('BOX', (0, 0), (-1, -1), 1, HexColor("#22c55e")),
+            ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#dcfce7")),
+        ]))
+        elements.append(meta_table)
+        elements.append(Spacer(1, 10))
+
+        # Soil Telemetry Summary
+        elements.append(Paragraph("<b>1. Averaged Soil Telemetry Input</b>", title_style))
+        telemetry_rows = [["Parameter", "Measured Value", "Target Recommendation"]]
+        params_list = [
+            ("pH Level", f"{avg_data.get('ph', 6.8):.1f} pH", "Optimal range: 6.5 - 7.5"),
+            ("Nitrogen (N)", f"{avg_data.get('nitrogen', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            ("Phosphorus (P)", f"{avg_data.get('phosphorus', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            ("Potassium (K)", f"{avg_data.get('potassium', 0):.1f} kg/ha", "Baseline adjustment applied"),
+            ("Soil Moisture", f"{avg_data.get('moisture', 0):.1f} %", "Field moisture status"),
+            ("Temperature", f"{avg_data.get('temperature', 0):.1f} °C", "Ambient soil temp"),
+        ]
+        for p_k, p_v, p_t in params_list:
+            telemetry_rows.append([p_k, p_v, p_t])
+
+        t_table = Table(telemetry_rows, colWidths=[180, 160, 200])
+        t_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), HexColor("#166534")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), HexColor("#ffffff")),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('PADDING', (0, 0), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#bbf7d0")),
+        ]))
+        elements.append(t_table)
+        elements.append(Spacer(1, 12))
+
+        # Stage 2 Prescriptive Economic Table
+        if economic_rankings:
+            elements.append(Paragraph("<b>2. Stage 2 Prescriptive Economic Rankings (Ranked by Profit & MSP)</b>", title_style))
+            econ_rows = [["Rank", "Crop", "Score", "Exp Yield", "Harvest Price", "Total Cost/Acre", "Net Profit/Acre", "ROI %", "MSP"]]
+
+            for idx, e in enumerate(economic_rankings[:5], start=1):
+                econ_rows.append([
+                    f"#{idx}",
+                    e["crop"].title(),
+                    f"{e['s_prescriptive']:.1f}",
+                    f"{e['y_expected_per_acre']:.1f} Qtl",
+                    f"Rs. {e['p_effective']:,.0f}",
+                    f"Rs. {e['c_total_per_acre']:,.0f}",
+                    f"Rs. {e['net_profit_per_acre']:,.0f}",
+                    f"{e['roi_percent']:.1f}%",
+                    "Yes" if e.get("msp_backed") else "No"
+                ])
+
+            econ_table = Table(econ_rows, colWidths=[35, 75, 45, 65, 75, 80, 85, 45, 35])
+            econ_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), HexColor("#0f172a")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), HexColor("#ffffff")),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#cbd5e1")),
+                ('BACKGROUND', (0, 1), (-1, 1), HexColor("#f0fdf4")),
+            ]))
+            elements.append(econ_table)
+            elements.append(Spacer(1, 12))
+
+            # Top Recommended Crop Cost Breakdown Table
+            top_rec = economic_rankings[0]
+            elements.append(Paragraph(f"<b>3. Itemized Cultivation Cost Breakdown for Top Recommendation: {top_rec['crop'].upper()}</b>", title_style))
+            cb = top_rec.get("cost_breakdown", {})
+            cb_rows = [
+                ["Cost Component", "Cost per Acre (Rs.)", "Percentage of Total Cost"],
+                ["Seeds & Planting Material", f"Rs. {cb.get('seeds', 0):,.2f}", f"{(cb.get('seeds', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                ["Labor & Field Operations", f"Rs. {cb.get('labor', 0):,.2f}", f"{(cb.get('labor', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                ["Irrigation & Power", f"Rs. {cb.get('irrigation', 0):,.2f}", f"{(cb.get('irrigation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                ["Pesticides & Crop Protection", f"Rs. {cb.get('pesticides', 0):,.2f}", f"{(cb.get('pesticides', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                ["Soil NPK Remediation", f"Rs. {cb.get('remediation', 0):,.2f}", f"{(cb.get('remediation', 0)/top_rec['c_total_per_acre']*100):.1f}%"],
+                ["TOTAL CULTIVATION COST", f"Rs. {top_rec['c_total_per_acre']:,.2f}", "100.0%"]
+            ]
+            cb_table = Table(cb_rows, colWidths=[240, 160, 140])
+            cb_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), HexColor("#166534")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), HexColor("#ffffff")),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor("#bbf7d0")),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('BACKGROUND', (0, -1), (-1, -1), HexColor("#fef3c7")),
+            ]))
+            elements.append(cb_table)
+
+        doc.build(elements, canvasmaker=NumberedCanvas)
+        return filepath
+
+    @staticmethod
     def export_single_session(session_type: str, session_data: dict, farmer_name: str) -> str:
         """Generate PDF report for a single session."""
         filename = f"Krushi_AI_{session_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -326,3 +486,4 @@ class PDFExporter:
 
         doc.build(elements, canvasmaker=NumberedCanvas)
         return filepath
+

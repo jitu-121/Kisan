@@ -1,0 +1,222 @@
+{
+  "rice": {
+    "Cseeds": 1600,
+    "Clabor": 12000,
+    "Cirrigation": 3500,
+    "Cpesticides": 2500,
+    "YMPKV_base": 22.0,
+    "req_N": 40.0,
+    "req_P": 20.0,
+    "req_K": 20.0
+  },
+  "maize": {
+    "Cseeds": 2200,
+    "Clabor": 8500,
+    "Cirrigation": 2500,
+    "Cpesticides": 2000,
+    "YMPKV_base": 25.0,
+    "req_N": 50.0,
+    "req_P": 25.0,
+    "req_K": 25.0
+  },
+  "chickpea": {
+    "Cseeds": 2800,
+    "Clabor": 6500,
+    "Cirrigation": 1500,
+    "Cpesticides": 1800,
+    "YMPKV_base": 10.0,
+    "req_N": 10.0,
+    "req_P": 20.0,
+    "req_K": 10.0
+  },
+  "kidneybeans": {
+    "Cseeds": 3000,
+    "Clabor": 7000,
+    "Cirrigation": 1800,
+    "Cpesticides": 1500,
+    "YMPKV_base": 8.0,
+    "req_N": 10.0,
+    "req_P": 20.0,
+    "req_K": 10.0
+  },
+  "pigeonpeas": {
+    "Cseeds": 1800,
+    "Clabor": 7500,
+    "Cirrigation": 1500,
+    "Cpesticides": 2200,
+    "YMPKV_base": 9.0,
+    "req_N": 10.0,
+    "req_P": 20.0,
+    "req_K": 10.0
+  },
+  "mothbeans": {
+    "Cseeds": 1200,
+    "Clabor": 5000,
+    "Cirrigation": 1000,
+    "Cpesticides": 1000,
+    "YMPKV_base": 6.0,
+    "req_N": 8.0,
+    "req_P": 16.0,
+    "req_K": 8.0
+  },
+  "mungbean": {
+    "Cseeds": 1400,
+    "Clabor": 5500,
+    "Cirrigation": 1200,
+    "Cpesticides": 1200,
+    "YMPKV_base": 7.0,
+    "req_N": 8.0,
+    "req_P": 16.0,
+    "req_K": 8.0
+  },
+  "blackgram": {
+    "Cseeds": 1500,
+    "Clabor": 5500,
+    "Cirrigation": 1200,
+    "Cpesticides": 1200,
+    "YMPKV_base": 7.5,
+    "req_N": 8.0,
+    "req_P": 16.0,
+    "req_K": 8.0
+  },
+  "lentil": {
+    "Cseeds": 1600,
+    "Clabor": 6000,
+    "Cirrigation": 1300,
+    "Cpesticides": 1300,
+    "YMPKV_base": 8.5,
+    "req_N": 10.0,
+    "req_P": 20.0,
+    "req_K": 10.0
+  },
+  "pomegranate": {
+    "Cseeds": 8000,
+    "Clabor": 25000,
+    "Cirrigation": 10000,
+    "Cpesticides": 15000,
+    "YMPKV_base": 60.0,
+    "req_N": 60.0,
+    "req_P": 30.0,
+    "req_K": 60.0
+  },
+  "banana": {
+    "Cseeds": 12000,
+    "Clabor": 30000,
+    "Cirrigation": 12000,
+    "Cpesticides": 8000,
+    "YMPKV_base": 250.0,
+    "req_N": 80.0,
+    "req_P": 40.0,
+    "req_K": 100.0
+  },
+  "mango": {
+    "Cseeds": 6000,
+    "Clabor": 15000,
+    "Cirrigation": 6000,
+    "Cpesticides": 8000,
+    "YMPKV_base": 50.0,
+    "req_N": 40.0,
+    "req_P": 20.0,
+    "req_K": 40.0
+  },
+  "grapes": {
+    "Cseeds": 15000,
+    "Clabor": 40000,
+    "Cirrigation": 15000,
+    "Cpesticides": 25000,
+    "YMPKV_base": 120.0,
+    "req_N": 70.0,
+    "req_P": 35.0,
+    "req_K": 70.0
+  },
+  "watermelon": {
+    "Cseeds": 3500,
+    "Clabor": 12000,
+    "Cirrigation": 4000,
+    "Cpesticides": 4500,
+    "YMPKV_base": 180.0,
+    "req_N": 40.0,
+    "req_P": 20.0,
+    "req_K": 30.0
+  },
+  "muskmelon": {
+    "Cseeds": 3000,
+    "Clabor": 10000,
+    "Cirrigation": 3500,
+    "Cpesticides": 4000,
+    "YMPKV_base": 120.0,
+    "req_N": 35.0,
+    "req_P": 20.0,
+    "req_K": 25.0
+  },
+  "apple": {
+    "Cseeds": 10000,
+    "Clabor": 22000,
+    "Cirrigation": 8000,
+    "Cpesticides": 12000,
+    "YMPKV_base": 80.0,
+    "req_N": 50.0,
+    "req_P": 25.0,
+    "req_K": 50.0
+  },
+  "orange": {
+    "Cseeds": 7000,
+    "Clabor": 18000,
+    "Cirrigation": 7000,
+    "Cpesticides": 9000,
+    "YMPKV_base": 90.0,
+    "req_N": 45.0,
+    "req_P": 22.0,
+    "req_K": 45.0
+  },
+  "papaya": {
+    "Cseeds": 5000,
+    "Clabor": 16000,
+    "Cirrigation": 6000,
+    "Cpesticides": 6000,
+    "YMPKV_base": 200.0,
+    "req_N": 60.0,
+    "req_P": 30.0,
+    "req_K": 60.0
+  },
+  "coconut": {
+    "Cseeds": 4000,
+    "Clabor": 10000,
+    "Cirrigation": 5000,
+    "Cpesticides": 3000,
+    "YMPKV_base": 80.0,
+    "req_N": 30.0,
+    "req_P": 15.0,
+    "req_K": 40.0
+  },
+  "cotton": {
+    "Cseeds": 2500,
+    "Clabor": 14000,
+    "Cirrigation": 4000,
+    "Cpesticides": 6000,
+    "YMPKV_base": 12.0,
+    "req_N": 45.0,
+    "req_P": 22.0,
+    "req_K": 22.0
+  },
+  "jute": {
+    "Cseeds": 1200,
+    "Clabor": 9000,
+    "Cirrigation": 2000,
+    "Cpesticides": 2000,
+    "YMPKV_base": 14.0,
+    "req_N": 25.0,
+    "req_P": 15.0,
+    "req_K": 15.0
+  },
+  "coffee": {
+    "Cseeds": 6000,
+    "Clabor": 20000,
+    "Cirrigation": 5000,
+    "Cpesticides": 7000,
+    "YMPKV_base": 10.0,
+    "req_N": 50.0,
+    "req_P": 25.0,
+    "req_K": 50.0
+  }
+}

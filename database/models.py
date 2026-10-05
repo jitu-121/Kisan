@@ -23,6 +23,7 @@ class Farmer(Base):
     soil_tests = relationship("SoilTestSession", back_populates="farmer", cascade="all, delete-orphan")
     crop_recommendations = relationship("CropRecommendationSession", back_populates="farmer", cascade="all, delete-orphan")
     fertilizer_recommendations = relationship("FertilizerRecommendationSession", back_populates="farmer", cascade="all, delete-orphan")
+    economic_recommendations = relationship("EconomicRecommendationSession", back_populates="farmer", cascade="all, delete-orphan")
 
 
 class SoilTestSession(Base):
@@ -64,6 +65,28 @@ class CropRecommendationSession(Base):
     farmer = relationship("Farmer", back_populates="crop_recommendations")
 
 
+class EconomicRecommendationSession(Base):
+    """Stage 2 Analytical Prescriptive Economic Session Model."""
+    __tablename__ = "economic_recommendation_sessions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    farmer_id = Column(Integer, ForeignKey("farmers.id"), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    land_size_acres = Column(Float, nullable=False)
+    selected_crop = Column(String(50), nullable=False)
+    expected_yield = Column(Float, nullable=False)          # Quintals / Acre
+    total_cost = Column(Float, nullable=False)              # ₹ / Acre
+    remediation_cost = Column(Float, nullable=False)        # ₹ / Acre
+    estimated_harvest_price = Column(Float, nullable=False) # ₹ / Quintal
+    net_profit = Column(Float, nullable=False)              # ₹ / Acre
+    roi_percentage = Column(Float, nullable=False)          # %
+    prescriptive_score = Column(Float, nullable=False)      # 0 to 100
+    msp_backed = Column(Integer, default=0, nullable=False)   # 1 if MSP protected else 0
+    all_economic_rankings = Column(Text, nullable=True)     # JSON string of all ranked candidate crops
+
+    farmer = relationship("Farmer", back_populates="economic_recommendations")
+
+
 class FertilizerRecommendationSession(Base):
     """Fertilizer Recommendation Session Model."""
     __tablename__ = "fertilizer_recommendation_sessions"
@@ -94,3 +117,4 @@ class AppSetting(Base):
     manual_location = Column(String(100), default="Pune")
     setting_key = Column(String(50), nullable=True)
     setting_value = Column(String(255), nullable=True)
+
