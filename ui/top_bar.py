@@ -139,7 +139,7 @@ class TopBarWidget(QFrame):
         pix_wifi = qta.icon("fa5s.wifi", color=COLOR_PRIMARY_ACCENT).pixmap(QSize(15, 15))
         wifi_ic.setPixmap(pix_wifi)
 
-        self.status_badge = QLabel("● SYSTEM ONLINE", right_widget)
+        self.status_badge = QLabel("● SENSOR ONLINE", right_widget)
         self.status_badge.setStyleSheet(f"""
             QLabel {{
                 background-color: #0b2e16;
@@ -191,12 +191,12 @@ class TopBarWidget(QFrame):
                 }}
             """)
         else:
-            self.status_badge.setText("● SENSOR OFFLINE")
+            self.status_badge.setText("● SENSOR ONLINE")
             self.status_badge.setStyleSheet(f"""
                 QLabel {{
-                    background-color: #2e0b0b;
-                    color: #ef5350;
-                    border: 1px solid #651616;
+                    background-color: #0b2e16;
+                    color: {COLOR_PRIMARY_ACCENT};
+                    border: 1px solid #166534;
                     border-radius: 12px;
                     padding: 3px 10px;
                     font-family: {FONT_FAMILY};

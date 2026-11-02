@@ -1,68 +1,68 @@
 {
     "location": "B\u0101r\u0101mati",
     "temperature": "24\u00b0C",
-    "condition": "Cloudy",
-    "icon": "fa5s.cloud",
-    "humidity": "82%",
-    "wind": "10.6 km/h",
-    "rain_chance": "64%",
+    "condition": "Sunny",
+    "icon": "fa5s.sun",
+    "humidity": "79%",
+    "wind": "9.3 km/h",
+    "rain_chance": "88%",
     "uv_index": "N/A",
-    "cloud_cover": 100,
-    "updated_at": "12:53 AM",
-    "updated_at_raw": "2026-09-12 00:53:18",
+    "cloud_cover": 0,
+    "updated_at": "11:52 PM",
+    "updated_at_raw": "2026-11-02 23:52:15",
     "synced_ago": "Just now",
     "forecast": [
         {
-            "day": "Sun",
-            "date": "13 Sep",
-            "temp": "31\u00b0C / 23\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "55%"
-        },
-        {
-            "day": "Mon",
-            "date": "14 Sep",
-            "temp": "32\u00b0C / 23\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "72%"
-        },
-        {
             "day": "Tue",
-            "date": "15 Sep",
-            "temp": "33\u00b0C / 22\u00b0C",
+            "date": "03 Nov",
+            "temp": "31\u00b0C / 22\u00b0C",
             "condition": "Drizzle",
             "icon": "fa5s.cloud-rain",
-            "rain_chance": "65%"
+            "rain_chance": "15%"
         },
         {
             "day": "Wed",
-            "date": "16 Sep",
-            "temp": "33\u00b0C / 22\u00b0C",
-            "condition": "Drizzle",
-            "icon": "fa5s.cloud-rain",
-            "rain_chance": "70%"
+            "date": "04 Nov",
+            "temp": "32\u00b0C / 22\u00b0C",
+            "condition": "Cloudy",
+            "icon": "fa5s.cloud",
+            "rain_chance": "10%"
         },
         {
             "day": "Thu",
-            "date": "17 Sep",
-            "temp": "33\u00b0C / 22\u00b0C",
+            "date": "05 Nov",
+            "temp": "32\u00b0C / 22\u00b0C",
             "condition": "Drizzle",
             "icon": "fa5s.cloud-rain",
-            "rain_chance": "76%"
+            "rain_chance": "14%"
+        },
+        {
+            "day": "Fri",
+            "date": "06 Nov",
+            "temp": "31\u00b0C / 22\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "16%"
+        },
+        {
+            "day": "Sat",
+            "date": "07 Nov",
+            "temp": "31\u00b0C / 22\u00b0C",
+            "condition": "Drizzle",
+            "icon": "fa5s.cloud-rain",
+            "rain_chance": "15%"
         }
     ],
     "agronomy": {
-        "et0": "1.2 mm/day",
-        "et0_val": 1.2,
-        "et0_desc": "Low Evaporation",
-        "leaching_risk": "CRITICAL (76%)",
-        "leaching_risk_pct": 76,
-        "spray_status": "UNFAVORABLE",
-        "max_rain": 76
+        "et0": "2.9 mm/day",
+        "et0_val": 2.9,
+        "et0_desc": "Moderate Evaporation",
+        "leaching_risk": "LOW (25%)",
+        "leaching_risk_pct": 25,
+        "spray_status": "OPTIMAL",
+        "max_rain": 16
     },
-    "ai_advisory": "Heavy rainfall cluster detected (Next 3 Days Max Rain >76%). High risk of nutrient runoff and root leaching. Postpone all Nitrogen/Urea soil application until dry spell.",
+    "ai_advisory": "Favorable agronomic weather window. Ideal conditions for balanced fertigation, routine crop inspection, and foliar spray operations.",
     "is_offline": false,
     "from_cache": false
 }
